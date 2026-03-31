@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String  @id @default(uuid())
+  email       String? @unique
+  phone       String  @unique
+  role        Role
+  preferences Json?
+}
+
+model Layout {
+  id                String             @id @default(uuid())
+  name              String
+  isActive          Boolean            @default(false)
+  adjacencyGraph    Json
+  effectiveDate     DateTime
+  reservationTables ReservationTable[]
+  tables            Table[]
+}
+
+model Table {
+  id                String
+  layoutId          String
+  type              TableType
+  minCapacity       Int
+  maxCapacity       Int
+  priorityScore     Int
+  x                 Int                @default(0)
+  y                 Int                @default(0)
+  width             Int                @default(0)
+  height            Int                @default(0)
+  shape             String             @default("RECTANGLE")
+  rotation          Int                @default(0)
+  reservationTables ReservationTable[]
+  layout            Layout             @relation(fields: [layoutId], references: [id])
+
+  @@id([id, layoutId])
+  @@index([layoutId])
+  @@index([type])
+}
+
+model Reservation {
+  id                String             @id @default(uuid())
+  shortId           String             @unique
+  clientName        String
+  clientPhone       String
+  partySize         Int
+  startTime         DateTime           @db.Timestamptz(6)
+  endTime           DateTime           @db.Timestamptz(6)
+  status            ReservationStatus
+  depositStatus     DepositStatus
+  source            ReservationSource
+  internalNotes     String?
+  customerNotes     String?
+  version           Int                @default(1)
+  createdAt         DateTime           @default(now())
+  clientEmail       String?
+  checkedInAt       DateTime?
+  completedAt       DateTime?
+  freedAt           DateTime?
+  lateWarningSent   Boolean            @default(false)
+  reminderSent      Boolean            @default(false)
+  thankYouSent      Boolean            @default(false)
+  payments          Payment[]
+  reservationTables ReservationTable[]
+
+  @@index([clientPhone, startTime])
+  @@index([startTime, endTime])
+}
+
+model ReservationTable {
+  reservationId String
+  tableId       String
+  layoutId      String
+  isPrimary     Boolean     @default(false)
+  layout        Layout      @relation(fields: [layoutId], references: [id])
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+  table         Table       @relation(fields: [tableId, layoutId], references: [id, layoutId])
+
+  @@id([reservationId, tableId, layoutId])
+  @@index([tableId, layoutId])
+}
+
+model Payment {
+  id               String          @id @default(uuid())
+  reservationId    String
+  provider         PaymentProvider
+  providerIntentId String          @unique
+  amountCents      Int
+  status           PaymentStatus
+  idempotencyKey   String
+  reservation      Reservation     @relation(fields: [reservationId], references: [id])
+
+  @@index([reservationId])
+}
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  reservationId String?
+  tableId       String?
+  action        String
+  before        Json?
+  after         Json?
+  reason        String?
+  adminId       String?
+  createdAt     DateTime @default(now())
+
+  @@index([reservationId])
+  @@index([createdAt])
+}
+
+enum Role {
+  ADMIN
+  STAFF
+  CLIENT
+}
+
+enum TableType {
+  STANDARD
+  MERGED_FIXED
+  CIRCULAR
+}
+
+enum ReservationStatus {
+  HOLD
+  PENDING_DEPOSIT
+  CONFIRMED
+  CHECKED_IN
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum DepositStatus {
+  NOT_REQUIRED
+  PENDING
+  PAID
+  REFUNDED
+  CORE_REFUNDED
+}
+
+enum ReservationSource {
+  WEB
+  KIOSK
+  PHONE
+  WALK_IN
+}
+
+enum PaymentProvider {
+  STRIPE
+}
+
+enum PaymentStatus {
+  SUCCEEDED
+  PROCESSING
+  FAILED
+  REFUNDED
+}
+
+model Blackout {
+  id        String   @id @default(uuid())
+  startTime DateTime @db.Timestamptz(6)
+  endTime   DateTime @db.Timestamptz(6)
+  reason    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([startTime, endTime])
+}
+

@@ -1,0 +1,33 @@
+name: Contracts Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'studio/CONTRACTS/**'
+  push:
+    branches: [main]
+    paths:
+      - 'studio/CONTRACTS/**'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-openapi:
+    name: Validate OpenAPI Contract
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Validate OpenAPI specification
+        run: |
+          npx @redocly/cli lint studio/CONTRACTS/openapi.yaml
+        continue-on-error: false
+
+      - name: Check for contract changes
+        run: |
+          echo "Checking if OpenAPI contract is valid and follows standards..."
+          echo "✅ OpenAPI contract validated successfully"

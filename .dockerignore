@@ -1,0 +1,45 @@
+# Dependencies
+node_modules
+frontend/node_modules
+
+# Build outputs
+dist
+frontend/dist
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.cursor
+.idea
+*.swp
+*.swo
+
+# Environment files (we use .env.docker explicitly)
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test files
+tests
+*.test.ts
+*.spec.ts
+jest.config.js
+coverage
+
+# Documentation
+*.md
+!README.md
+
+# Misc
+.DS_Store
+Thumbs.db
+temp_p
+scripts
+*.txt

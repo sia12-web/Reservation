@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  STAFF
+  CLIENT
+}
+
+enum TableType {
+  STANDARD
+  MERGED_FIXED
+  CIRCULAR
+}
+
+enum ReservationStatus {
+  HOLD
+  PENDING_DEPOSIT
+  CONFIRMED
+  CHECKED_IN
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum DepositStatus {
+  NOT_REQUIRED
+  PENDING
+  PAID
+  REFUNDED
+  CORE_REFUNDED
+}
+
+enum ReservationSource {
+  WEB
+  KIOSK
+  PHONE
+}
+
+enum PaymentProvider {
+  STRIPE
+}
+
+enum PaymentStatus {
+  SUCCEEDED
+  PROCESSING
+  FAILED
+}
+
+model User {
+  id          String  @id @default(uuid())
+  email       String? @unique
+  phone       String  @unique
+  role        Role
+  preferences Json?
+}
+
+model Layout {
+  id             String             @id @default(uuid())
+  name           String
+  isActive       Boolean            @default(false)
+  adjacencyGraph Json
+  effectiveDate  DateTime
+  tables         Table[]
+  reservationTables ReservationTable[]
+}
+
+model Table {
+  id             String
+  layoutId       String
+  type           TableType
+  minCapacity    Int
+  maxCapacity    Int
+  priorityScore  Int
+  layout         Layout             @relation(fields: [layoutId], references: [id])
+  reservationTables ReservationTable[]
+
+  @@id([id, layoutId])
+  @@index([layoutId])
+  @@index([type])
+}
+
+model Reservation {
+  id            String            @id @default(uuid())
+  shortId       String            @unique
+  clientName    String
+  clientPhone   String
+  partySize     Int
+  startTime     DateTime          @db.Timestamptz
+  endTime       DateTime          @db.Timestamptz
+  status        ReservationStatus
+  depositStatus DepositStatus
+  source        ReservationSource
+  internalNotes String?
+  customerNotes String?
+  version       Int               @default(1)
+  createdAt     DateTime          @default(now())
+  reservationTables ReservationTable[]
+  payments      Payment[]
+
+  @@index([clientPhone, startTime])
+  @@index([startTime, endTime])
+}
+
+model ReservationTable {
+  reservationId String
+  tableId       String
+  layoutId      String
+  isPrimary     Boolean           @default(false)
+  reservation   Reservation       @relation(fields: [reservationId], references: [id])
+  table         Table             @relation(fields: [tableId, layoutId], references: [id, layoutId])
+  layout        Layout            @relation(fields: [layoutId], references: [id])
+
+  @@id([reservationId, tableId, layoutId])
+  @@index([tableId, layoutId])
+}
+
+model Payment {
+  id               String         @id @default(uuid())
+  reservationId    String
+  provider         PaymentProvider
+  providerIntentId String         @unique
+  amountCents      Int
+  status           PaymentStatus
+  idempotencyKey   String
+  reservation      Reservation    @relation(fields: [reservationId], references: [id])
+
+  @@index([reservationId])
+}

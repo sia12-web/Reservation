@@ -1,0 +1,46 @@
+services:
+  # Monolithic Web Service (Backend + Frontend)
+  - type: web
+    name: reservation-monolith
+    runtime: node
+    region: oregon
+    plan: free # Uses the Free Tier
+    # Build command installs deps, builds backend, builds frontend, and runs migrations
+    buildCommand: npm install --include=dev && npm run build:deploy && npx prisma migrate deploy
+    # Start command runs the seed (safely) then starts the server
+    startCommand: npx prisma db seed && node dist/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: reservation-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: reservation-redis
+          property: connectionString
+      - key: PORT
+        value: 10000
+      - key: ALLOWED_ORIGINS
+        value: https://reservation-monolith.onrender.com # Update this to your actual Render URL after creation
+      # You MUST add these in the Render Dashboard (Environment secrets):
+      # - JWT_SECRET (random string)
+      # - ADMIN_PIN (e.g. 1234)
+      # - STRIPE_SECRET_KEY (dummy or real)
+      # - STRIPE_WEBHOOK_SECRET (dummy or real)
+
+  # Redis Service (Free Tier)
+  - type: redis
+    name: reservation-redis
+    region: oregon
+    plan: free # Free Tier Redis
+    ipAllowList: [] # Allow internal connections
+
+databases:
+  - name: reservation-db
+    region: oregon
+    plan: free # Free Tier PostgreSQL
+    databaseName: reservation
+    user: reservation_user
