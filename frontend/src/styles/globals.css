@@ -13,6 +13,11 @@ body {
   overscroll-behavior: none;
   background-color: #f8fafc;
   color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+}
+
+.premium-modal {
+  width: min(calc(100vw - 2rem), 448px);
 }
 
 @keyframes pulse-subtle {

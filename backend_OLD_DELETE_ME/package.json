@@ -1,7 +1,7 @@
 {
-  "name": "classmatefinder-backend",
+  "name": "reservation-backend",
   "version": "1.0.0",
-  "description": "Backend for ClassmateFinder application",
+  "description": "Backend for Restaurant Reservation System",
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon --exec ts-node --project tsconfig.dev.json src/server.ts",
@@ -21,10 +21,10 @@
     "format:check": "prettier --check \"src/**/*.ts\""
   },
   "keywords": [
-    "classmate",
-    "finder",
-    "education",
-    "socket.io"
+    "reservation",
+    "restaurant",
+    "booking",
+    "table-management"
   ],
   "author": "",
   "license": "MIT",

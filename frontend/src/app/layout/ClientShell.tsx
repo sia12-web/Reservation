@@ -16,21 +16,22 @@ export default function ClientShell({ children, title, subtitle }: ClientShellPr
     <div className="min-h-screen bg-white text-slate-900 flex flex-col">
       <header className="border-b border-slate-100">
         <div className="max-w-5xl mx-auto px-5 py-8 space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <img src="/favicon.png" alt="Diba Logo" className="w-10 h-10 rounded-lg object-contain" />
               <span className="text-xl font-bold tracking-tight">Diba Restaurant</span>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center">
 
               <a
                 href="/admin/login"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-black text-slate-600 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all shadow-sm"
+                className="group flex items-center gap-2 px-3 py-2 sm:px-4 rounded-xl bg-slate-50 border border-slate-200 text-[10px] sm:text-xs font-black text-slate-600 hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all shadow-sm whitespace-nowrap"
               >
-                <ShieldCheck className="w-4 h-4 text-blue-500 group-hover:text-blue-300" />
-                <span>Admin Portal</span>
+                <ShieldCheck className="w-3 h-3 sm:w-4 sm:h-4 text-blue-500 group-hover:text-blue-300" />
+                <span className="hidden xs:inline">Admin Portal</span>
+                <span className="xs:hidden">Admin</span>
               </a>
             </div>
           </div>

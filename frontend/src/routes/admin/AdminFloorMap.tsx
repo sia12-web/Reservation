@@ -79,10 +79,10 @@ export default function AdminFloorMap() {
     const isOccupied = selectedTable?.status === "OCCUPIED" || selectedTable?.status === "RESERVED";
 
     return (
-        <div className="flex flex-col h-[calc(100vh-56px)] 2xl:flex-row gap-3 p-3 md:p-4 overflow-hidden">
+        <div className="flex flex-col h-[calc(100vh-64px)] lg:flex-row gap-3 p-3 md:p-4 overflow-hidden">
             {/* Main Area */}
             <div className="flex-grow flex flex-col bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 overflow-hidden">
-                <div className="p-4 md:p-6 pb-2">
+                <div className="p-4 md:p-6 pb-2 flex-grow flex flex-col">
                     <div className="flex flex-col gap-4 mb-6 z-10 relative">
                         <div className="flex flex-wrap items-center justify-between gap-4">
                             <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-200">
@@ -169,7 +169,7 @@ export default function AdminFloorMap() {
             </div>
 
             {/* Sidebar */}
-            <div className="w-full 2xl:w-72 flex flex-col gap-3">
+            <div className="w-full lg:w-80 xl:w-96 flex flex-col gap-3 h-full overflow-hidden">
                 <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-5 flex-grow overflow-y-auto">
                     <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
                         <Info className="w-6 h-6 text-blue-600" />

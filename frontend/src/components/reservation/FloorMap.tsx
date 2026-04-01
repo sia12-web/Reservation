@@ -24,17 +24,24 @@ export default function FloorMap({
     const PADDING = 40;
 
     // Calculate bounds dynamically from tables to ensure they are all visible
-    const bounds = layout.tables.reduce(
-        (acc, t) => {
-            return {
-                minX: Math.min(acc.minX, t.x),
-                minY: Math.min(acc.minY, t.y),
-                maxX: Math.max(acc.maxX, t.x + t.width),
-                maxY: Math.max(acc.maxY, t.y + t.height),
-            };
-        },
-        { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }
-    );
+    const bounds = layout.tables.length > 0 
+        ? layout.tables.reduce(
+            (acc, t) => {
+                return {
+                    minX: Math.min(acc.minX, t.x),
+                    minY: Math.min(acc.minY, t.y),
+                    maxX: Math.max(acc.maxX, t.x + t.width),
+                    maxY: Math.max(acc.maxY, t.y + t.height),
+                };
+            },
+            { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }
+        )
+        : { minX: 0, minY: 0, maxX: 1000, maxY: 1000 };
+
+    // Set fallback if still Infinity (e.g. invalid tables)
+    if (bounds.minX === Infinity) {
+        bounds.minX = 0; bounds.minY = 0; bounds.maxX = 1000; bounds.maxY = 1000;
+    }
 
     // Determine effective view mode
     const effectiveIsAdminView = isAdminView || layout.name === "Floor View";
@@ -64,8 +71,8 @@ export default function FloorMap({
 
     return (
         <div className="w-full h-full relative select-none flex flex-col border border-slate-200 rounded-xl overflow-hidden bg-slate-50/50">
-            <div className="flex-grow relative overflow-hidden flex items-center justify-center bg-white/40 min-h-[300px] sm:min-h-[400px]">
-                <div className="w-full max-w-xl p-4 sm:p-6">
+            <div className="flex-grow relative overflow-hidden flex items-center justify-center bg-white/40 min-h-[400px]">
+                <div className="w-full max-w-7xl p-4 sm:p-6 h-full flex items-center justify-center">
                     <svg
                         viewBox={`${bounds.minX - PADDING} ${bounds.minY - PADDING} ${bounds.maxX - bounds.minX + PADDING * 2} ${bounds.maxY - bounds.minY + PADDING * 2}`}
                         className="w-full h-full drop-shadow-xl"
@@ -202,7 +209,7 @@ export default function FloorMap({
                     </svg>
                 </div>
             </div>
-            <div className="p-4 bg-white/90 backdrop-blur-sm flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-xs font-semibold border-t border-slate-200">
+            <div className="p-4 bg-white/90 backdrop-blur-sm flex flex-wrap items-center justify-start xs:justify-center gap-x-4 sm:gap-x-6 gap-y-2 text-[10px] sm:text-xs font-semibold border-t border-slate-200">
                 {/* Legend */}
                 {isAdminView ? (
                     // Admin Legend

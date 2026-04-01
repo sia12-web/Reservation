@@ -281,8 +281,17 @@ router.get(
     }
 
     res.json({
-        ...reservation,
-        clientSecret
+        id: reservation.id, // Include ID for demo payment bypass
+        shortId: reservation.shortId,
+        clientName: reservation.clientName,
+        partySize: reservation.partySize,
+        startTime: reservation.startTime,
+        endTime: reservation.endTime,
+        status: reservation.status,
+        depositStatus: reservation.depositStatus,
+        reservationTables: reservation.reservationTables,
+        clientSecret,
+        customerNotes: reservation.customerNotes,
     });
   })
 );

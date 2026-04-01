@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { fetchReservationByShortId, cancelReservation } from "../../api/reservations.api";
+import { fetchReservationByShortId, cancelReservation, confirmDemoPayment } from "../../api/reservations.api";
 import ClientShell from "../../app/layout/ClientShell";
 import {
     Calendar,
@@ -15,7 +15,7 @@ import {
     ArrowRight,
     CreditCard
 } from "lucide-react";
-import StripePaymentModal from "../../components/reservation/StripePaymentModal";
+// import StripePaymentModal from "../../components/reservation/StripePaymentModal"; // Disabled for demo
 import { toRestaurantTime, getRestaurantNow } from "../../utils/time";
 
 import clsx from "clsx";
@@ -23,7 +23,7 @@ import clsx from "clsx";
 export default function ManageReservationPage() {
     const { shortId } = useParams<{ shortId: string }>();
     const [isConfirmingCancel, setIsConfirmingCancel] = useState(false);
-    const [isPaying, setIsPaying] = useState(false);
+    // const [isPaying, setIsPaying] = useState(false); // Not needed for demo bypass
 
     const { data: reservation, isLoading, error, refetch } = useQuery({
         queryKey: ["reservation", shortId],
@@ -36,6 +36,18 @@ export default function ManageReservationPage() {
         onSuccess: () => {
             setIsConfirmingCancel(false);
             refetch();
+        },
+    });
+
+    const demoPaymentMutation = useMutation({
+        mutationFn: (id: string) => confirmDemoPayment(id),
+        onSuccess: () => {
+            refetch();
+            alert("✅ Payment confirmed! Reservation is now CONFIRMED.");
+        },
+        onError: (error: any) => {
+            console.error("Demo payment error:", error);
+            alert(`❌ Error: ${error.message || "Payment failed"}`);
         },
     });
 
@@ -96,10 +108,18 @@ export default function ManageReservationPage() {
                             <p className="text-amber-700 font-medium">A $50 deposit is needed to confirm your large party reservation.</p>
                         </div>
                         <button
-                            onClick={() => setIsPaying(true)}
-                            className="w-full md:w-auto px-8 py-4 bg-amber-600 text-white rounded-2xl font-black hover:bg-amber-700 transition-all shadow-lg shadow-amber-200 uppercase tracking-wider text-sm"
+                            onClick={() => {
+                                console.log("Button clicked!", { id: reservation.id, isPending: demoPaymentMutation.isPending });
+                                if (!reservation.id) {
+                                    alert("❌ Error: Reservation ID is missing!");
+                                    return;
+                                }
+                                demoPaymentMutation.mutate(reservation.id);
+                            }}
+                            disabled={demoPaymentMutation.isPending}
+                            className="w-full md:w-auto px-8 py-4 bg-amber-600 text-white rounded-2xl font-black hover:bg-amber-700 transition-all shadow-lg shadow-amber-200 uppercase tracking-wider text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Pay Deposit Now
+                            {demoPaymentMutation.isPending ? "Processing..." : "Pay Deposit Now"}
                         </button>
                     </div>
                 )}
@@ -220,20 +240,8 @@ export default function ManageReservationPage() {
                         </div>
                     </div>
                 )}
-                {/* Stripe Payment Modal */}
-                {isPaying && typeof reservation.clientSecret === "string" && (
-                    <StripePaymentModal
-                        clientSecret={reservation.clientSecret}
-                        reservationId={reservation.id}
-                        onSuccess={() => {
-                            setIsPaying(false);
-                            refetch();
-                        }}
-                        onCancel={() => setIsPaying(false)}
-                        amount={50}
-                        cancelLabel="Go Back"
-                    />
-                )}
+                {/* Stripe Payment Modal - Disabled for Demo */}
+                {/* Demo mode uses instant confirmation instead of Stripe */}
             </div>
         </ClientShell>
     );

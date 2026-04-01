@@ -57,6 +57,7 @@ export default function ReservationForm({
   const [selectedDay, setSelectedDay] = useState(() => selectedSlot.startOf("day"));
   const [slotPage, setSlotPage] = useState(0);
   const [selectedTableIds, setSelectedTableIds] = useState<string[]>([]);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [showNetworkModal, setShowNetworkModal] = useState(false);
@@ -256,7 +257,16 @@ export default function ReservationForm({
           <input
             className="h-14 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
             value={clientName}
-            onChange={(event) => setClientName(event.target.value)}
+            onChange={(event) => {
+              setClientName(event.target.value);
+              if (fieldErrors.clientName) {
+                setFieldErrors(prev => {
+                  const n = { ...prev };
+                  delete n.clientName;
+                  return n;
+                });
+              }
+            }}
             placeholder="Guest name"
             autoComplete="off"
           />
@@ -269,7 +279,16 @@ export default function ReservationForm({
           <PhoneInput
             label="Phone"
             value={clientPhone}
-            onChange={setClientPhone}
+            onChange={(val) => {
+              setClientPhone(val);
+              if (fieldErrors.clientPhone) {
+                setFieldErrors(prev => {
+                  const n = { ...prev };
+                  delete n.clientPhone;
+                  return n;
+                });
+              }
+            }}
             error={fieldErrors.clientPhone}
           />
         </div>
@@ -401,7 +420,7 @@ export default function ReservationForm({
             </div>
           )}
 
-          {layoutData && partySize <= 10 && !availabilityData?.blackoutReason && (
+          {layoutData && partySize <= 14 && !availabilityData?.blackoutReason && (
             (() => {
               const availableRealTables = layoutData.tables.filter(t => {
                 if (t.id === "T15") return false;
@@ -491,15 +510,45 @@ export default function ReservationForm({
         </label>
       </div>
 
+      <div className="space-y-4 p-6 bg-slate-50 border border-slate-200 rounded-2xl">
+          <div className="flex items-center gap-2 mb-2 text-slate-800">
+            <ShieldAlert className="w-5 h-5 text-blue-600" />
+            <h3 className="font-bold text-lg">Terms & Conditions</h3>
+          </div>
+          <div className="h-32 overflow-y-auto pr-2 text-sm text-slate-600 space-y-4 font-medium leading-relaxed custom-scrollbar">
+            <p>1. <b>Late Arrivals</b>: Your reservation is held for a maximum of 15 minutes. Beyond this time, we may release your table to other guests waiting on the list.</p>
+            <p>2. <b>Cancellations</b>: Security deposits (for large parties) are non-refundable in the event of a no-show or cancellation made less than 24 hours before the reservation time.</p>
+            <p>3. <b>Property Damage & Costs</b>: By reserving, you agree to be held liable for any physical damage caused to the restaurant’s property, including but not limited to furniture, equipment, or decor. <b>In the event of damage, Diba Restaurant reserves the right to hold your security deposit for an investigation and to cover repair or replacement costs.</b></p>
+            <p>4. <b>Conduct</b>: We reserve the right to refuse service or remove guests who are disruptive, intoxicated, or demonstrate behavior that compromises the safety or comfort of our staff and other diners.</p>
+            <p>5. <b>Liability</b>: Diba Restaurant is not responsible for lost or stolen personal belongings left on the premises.</p>
+          </div>
+
+          <label className="flex items-start gap-4 p-4 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-blue-50 transition-colors select-none group">
+            <div className="pt-1">
+              <input
+                type="checkbox"
+                className="w-6 h-6 rounded-md border-2 border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+              />
+            </div>
+            <span className="text-slate-700 font-bold leading-tight group-hover:text-blue-900">
+              I have read and agree to all the terms above, including the property damage and liability policies.
+            </span>
+          </label>
+      </div>
+
       <button
         type="submit"
         className={clsx(
-          "h-12 w-full rounded-md text-lg font-semibold transition-all",
-          isPending || !!availabilityData?.blackoutReason ? "bg-slate-300 text-slate-600 cursor-not-allowed opacity-50" : "bg-slate-900 text-white hover:bg-slate-800"
+          "h-16 w-full rounded-2xl text-xl font-black transition-all shadow-lg active:scale-[0.98]",
+          isPending || !!availabilityData?.blackoutReason || !agreedToTerms
+            ? "bg-slate-200 text-slate-400 cursor-not-allowed opacity-70"
+            : "bg-slate-900 text-white hover:bg-slate-800 hover:shadow-xl"
         )}
-        disabled={isPending || !!availabilityData?.blackoutReason}
+        disabled={isPending || !!availabilityData?.blackoutReason || !agreedToTerms}
       >
-        {isPending ? "Creating reservation…" : !!availabilityData?.blackoutReason ? "Unavailable" : "Create reservation"}
+        {isPending ? "Creating reservation…" : !!availabilityData?.blackoutReason ? "Unavailable" : "Reserve Now"}
       </button>
 
       {formError ? <p className="text-red-600 text-sm text-center font-bold animate-in fade-in slide-in-from-top-1">{formError}</p> : null}

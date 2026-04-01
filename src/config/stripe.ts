@@ -6,6 +6,10 @@ const isDummy =
   env.stripeSecretKey.includes("placeholder") ||
   env.stripeSecretKey === "sk_test_dummy";
 
+if (env.nodeEnv === "production" && isDummy) {
+  throw new Error("Production requires a real STRIPE_SECRET_KEY — placeholder/dummy keys are not allowed");
+}
+
 export const stripe = isDummy
   ? ({
     isMock: true,

@@ -11,15 +11,10 @@ const RESTAURANT_TZ = "America/Montreal";
 const CLEANUP_BUFFER = 15;
 
 export function calculateDurationMinutes(partySize: number): number {
-  let baseDuration = 0;
-  if (partySize <= 2) baseDuration = 75;
-  else if (partySize <= 4) baseDuration = 90;
-  else if (partySize <= 6) baseDuration = 105;
-  else if (partySize <= 8) baseDuration = 120;
-  else if (partySize <= 10) baseDuration = 135;
-  else if (partySize <= 14) baseDuration = 150;
-  else baseDuration = 180;
-
+  // Simplified rules:
+  // 1-10 people: 90 minutes total (75 base + 15 cleanup)
+  // 11+ people : 120 minutes total (105 base + 15 cleanup)
+  const baseDuration = partySize <= 10 ? 75 : 105;
   return baseDuration + CLEANUP_BUFFER;
 }
 

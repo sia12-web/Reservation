@@ -33,7 +33,6 @@ function validateEnv(): Env {
 
   if (!result.success) {
     const isTest = process.env.NODE_ENV === 'test';
-    const isProduction = process.env.NODE_ENV === 'production';
 
     // In test mode, we provide fake defaults to keep the app from crashing on import
     if (isTest) {
@@ -54,10 +53,8 @@ function validateEnv(): Env {
       .join('\n');
 
     console.error('❌ Invalid environment variables:\n' + missingVars);
-
-    if (isProduction) {
-      process.exit(1);
-    }
+    console.error('💡 Please check your .env file or environment configuration.');
+    process.exit(1);
   }
 
   return result.data as Env;
