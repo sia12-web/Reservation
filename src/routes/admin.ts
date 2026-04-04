@@ -10,9 +10,11 @@ import { redlock } from "../config/redis";
 import rateLimit from "express-rate-limit";
 import { maskPII } from "../utils/masking";
 import { createReservation } from "../services/reservation";
-import { sendLateWarning, sendCancellationEmail } from "../services/email";
+import { sendLateWarning, sendCancellationEmail, sendReservationConfirmation, sendDepositRequestEmail } from "../services/email";
 import { logger } from "../config/logger";
 import { refundReservationDeposit } from "../services/stripe";
+import { stripe } from "../config/stripe";
+import { env } from "../config/env";
 import { Prisma, ReservationStatus, ReservationSource } from "@prisma/client";
 
 const router = Router();
@@ -61,11 +63,11 @@ router.get(
     if (query.waitlistOnly) {
        // Global view of overflow ignoring date window
        where.startTime = { gte: new Date() }; // Only future
-       where.status = { in: ["CONFIRMED", "PENDING_DEPOSIT", "HOLD", "CHECKED_IN"] };
+       where.status = { in: ["WAITLIST", "CONFIRMED", "PENDING_DEPOSIT", "HOLD", "CHECKED_IN"] as any };
        where.reservationTables = { some: { tableId: "T15" } };
     } else {
         if (query.status) {
-          const validStatuses: ReservationStatus[] = ["HOLD", "PENDING_DEPOSIT", "CONFIRMED", "CHECKED_IN", "COMPLETED", "CANCELLED", "NO_SHOW"];
+          const validStatuses = ["HOLD", "WAITLIST", "PENDING_DEPOSIT", "CONFIRMED", "CHECKED_IN", "COMPLETED", "CANCELLED", "NO_SHOW"] as ReservationStatus[];
           const requested = query.status.split(",")
             .map(s => s.trim() as ReservationStatus)
             .filter(s => validStatuses.includes(s));
@@ -232,8 +234,31 @@ router.post(
         throw new HttpError(400, `Capacity ${totalCapacity} < party ${reservation.partySize}`);
       }
 
+      let upgradedStatus: ReservationStatus | null = null;
+      let paymentIntent: any = null;
+
+      // Determine upgrade intent BEFORE transaction
+      const isCurrentlyWaitlist = reservation.status === ("WAITLIST" as ReservationStatus);
+      const movingToPhysical = !newTableIds.includes("T15");
+      const needsDeposit = isCurrentlyWaitlist && movingToPhysical && reservation.partySize >= env.depositThreshold;
+      const needsConfirm = isCurrentlyWaitlist && movingToPhysical && !needsDeposit;
+
+      // Create Stripe intent OUTSIDE transaction to prevent orphan charges on rollback
+      if (needsDeposit) {
+        paymentIntent = await stripe.paymentIntents.create({
+          amount: 5000,
+          currency: "cad",
+          metadata: { shortId: reservation.shortId, clientName: reservation.clientName, partySize: String(reservation.partySize) },
+        });
+        upgradedStatus = "PENDING_DEPOSIT";
+      } else if (needsConfirm) {
+        upgradedStatus = "CONFIRMED";
+      }
+
       await prisma.$transaction(async (tx) => {
         const beforeTableIds = reservation.reservationTables.map((rt) => rt.tableId);
+        
+        // 1. Update Tables
         await tx.reservationTable.deleteMany({ where: { reservationId } });
         await tx.reservationTable.createMany({
           data: newTableIds.map((tid, idx) => ({
@@ -244,18 +269,67 @@ router.post(
           })),
         });
 
+        // 2. Apply Waitlist Upgrade
+        if (upgradedStatus === "PENDING_DEPOSIT" && paymentIntent) {
+          await tx.reservation.update({
+            where: { id: reservationId },
+            data: { status: upgradedStatus, depositStatus: "PENDING" }
+          });
+          await tx.payment.create({
+            data: {
+              reservationId: reservation.id,
+              provider: "STRIPE",
+              providerIntentId: paymentIntent.id,
+              amountCents: 5000,
+              status: "PROCESSING",
+              idempotencyKey: `res-upgrade:${reservation.id}`,
+            },
+          });
+        } else if (upgradedStatus === "CONFIRMED") {
+          await tx.reservation.update({
+            where: { id: reservationId },
+            data: { status: upgradedStatus }
+          });
+        }
+
+        // 3. Audit Log
         await tx.auditLog.create({
           data: {
             reservationId,
             action: "TABLES_REASSIGNED",
             before: maskPII({ tableIds: beforeTableIds, reservation }) as Prisma.JsonObject,
-            after: { tableIds: newTableIds } as Prisma.JsonObject,
-            reason,
+            after: { tableIds: newTableIds, status: upgradedStatus || reservation.status } as Prisma.JsonObject,
+            reason: upgradedStatus ? `Waitlist assigned to table. ${reason}` : reason,
           },
         });
       });
 
-      res.json({ message: "Tables reassigned", newTableIds });
+      // 4. Send Upgrade Notifications
+      if (upgradedStatus && reservation.clientEmail) {
+          if (upgradedStatus === "PENDING_DEPOSIT") {
+              sendDepositRequestEmail({
+                  to: reservation.clientEmail,
+                  clientName: reservation.clientName,
+                  startTime: reservation.startTime,
+                  shortId: reservation.shortId,
+                  partySize: reservation.partySize,
+                  tableIds: newTableIds
+              }).catch(e => logger.error("Upgrade email failed", e));
+          } else if (upgradedStatus === "CONFIRMED") {
+              sendReservationConfirmation({
+                  to: reservation.clientEmail,
+                  clientName: reservation.clientName,
+                  clientPhone: reservation.clientPhone,
+                  partySize: reservation.partySize,
+                  startTime: reservation.startTime,
+                  shortId: reservation.shortId,
+                  tableIds: newTableIds,
+                  status: "CONFIRMED"
+              }).catch(e => logger.error("Upgrade confirmation email failed", e));
+          }
+      }
+
+      res.json({ message: upgradedStatus ? `Tables reassigned and ${upgradedStatus} status applied` : "Tables reassigned", newTableIds });
     } finally {
       await lock.release();
     }
@@ -318,6 +392,7 @@ router.post(
     });
 
     if (!reservation) throw new HttpError(404, "Not found");
+    if ((reservation.status as string) === "WAITLIST") throw new HttpError(409, "Cannot send late warning to a waitlisted guest");
     if (reservation.lateWarningSent) throw new HttpError(409, "Warning already sent");
 
     await prisma.$transaction(async (tx) => {

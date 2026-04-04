@@ -72,15 +72,16 @@ export default function ReservationDetails() {
                 </div>
             </div>
             
-            {res.tableIds.includes('T15') && (
-                <div className="bg-red-50 border-2 border-red-200 p-6 rounded-3xl flex items-start gap-4 animate-bounce-subtle">
-                    <div className="w-12 h-12 bg-red-100 rounded-2xl flex items-center justify-center text-red-600 shrink-0">
-                        <AlertCircle className="w-8 h-8" strokeWidth={3} />
+            {res.status === 'WAITLIST' && (
+                <div className="bg-purple-50 border-2 border-purple-200 p-6 rounded-3xl flex items-start gap-4 animate-in fade-in duration-500">
+                    <div className="w-12 h-12 bg-purple-100 rounded-2xl flex items-center justify-center text-purple-600 shrink-0">
+                        <Clock className="w-8 h-8" strokeWidth={3} />
                     </div>
                     <div className="space-y-1">
-                        <h4 className="text-xl font-black text-red-900 tracking-tight leading-none mb-1">RESTAURANT IS FULL!</h4>
-                        <p className="text-red-700 font-bold leading-snug">
-                            <span className="text-red-900">Action Required:</span> Call the customer or manually adjust seating if a table frees up early.
+                        <h4 className="text-xl font-black text-purple-900 tracking-tight leading-none mb-1">WAITING LIST GUEST</h4>
+                        <p className="text-purple-700 font-bold leading-snug">
+                            This guest has been notified that they are on the waiting list. <span className="text-purple-900">No payment link has been sent yet.</span> 
+                            Move them to physical tables to trigger the confirmation/deposit email.
                         </p>
                     </div>
                 </div>

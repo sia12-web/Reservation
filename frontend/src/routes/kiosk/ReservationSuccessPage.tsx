@@ -85,12 +85,12 @@ export default function ReservationSuccessPage() {
               We strive to make your visit perfect. If you enjoyed using our system, please share your feedback.
             </p>
             <a 
-              href={import.meta.env.VITE_REVIEW_LINK || "https://search.google.com/local/writereview?placeid=YOUR_PLACE_ID"} 
+              href={import.meta.env.VITE_REVIEW_LINK || `https://www.bing.com/search?pglt=299&q=diba+restaurant&cvid=514257cdd16e4f66834fa475b9171628&gs_lcrp=EgRlZGdlKgYIAhBFGDsyCQgAEEUYPBj5BzIGCAEQRRg5MgYIAhBFGDsyBggDEEUYOzIGCAQQRRg7MgYIBRBFGEEyBggGEEUYPNIBCDI0MDRqMGoxqAIIsAIB&form=EX0050&pc=U531&filters=local_ypid:"YN6CE6D9BA91131947"&shtp=GetUrl&shid=ffd7fbc4-7ebe-41f3-9918-01e3b52b0511&shtk=RGliYSBSZXN0YXVyYW50&shdk=V2VsY29tZSB0byBEaWJhIFJlc3RhdXJhbnQsIHdoZXJlIHRoZSB2aWJyYW50IGFuZCByaWNoIGZsYXZvcnMgb2YgUGVyc2lhbiBjdWlzaW5lIGNvbWUgdG8gbGlmZS4gTG9jYXRlZCBpbiB0aGUg4oCm&shhk=5ueLirCqD7Q%2B%2BBtabe4gBHZws1mh7XlQX46LfMtt%2Bm8%3D`} 
               target="_blank" 
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-6 py-3 bg-blue-50 text-blue-700 rounded-xl font-bold hover:bg-blue-100 transition-all border border-blue-200"
             >
-              <span>Leave us a Google Review</span>
+              <span>Leave us a Review</span>
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
                 <path d="M5 5a2 2 0 00-2 2v8a2 2 0 002 2h8a2 2 0 002-2v-3a1 1 0 10-2 0v3H5V7h3a1 1 0 000-2H5z" />

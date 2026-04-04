@@ -173,13 +173,15 @@ export default function ReservationForm({
 
         if (error instanceof ApiError && (error.status === 400 || error.status === 422)) {
           const nextErrors: FieldErrors = {};
-          const details = error.details as Array<{ path?: string[]; message?: string }> | undefined;
-          details?.forEach((issue) => {
-            const field = issue.path?.[0];
-            if (field && typeof field === "string") {
-              nextErrors[field as keyof ReservationRequest] = issue.message || "Invalid value";
-            }
-          });
+          const details = error.details;
+          if (Array.isArray(details)) {
+              (details as any[]).forEach((issue) => {
+                  const field = issue.path?.[0];
+                  if (field && typeof field === "string") {
+                      nextErrors[field as keyof ReservationRequest] = issue.message || "Invalid value";
+                  }
+              });
+          }
 
           if (Object.keys(nextErrors).length === 0) {
             nextErrors.startTime = error.message || "Please choose a different time";
@@ -517,7 +519,7 @@ export default function ReservationForm({
           </div>
           <div className="h-32 overflow-y-auto pr-2 text-sm text-slate-600 space-y-4 font-medium leading-relaxed custom-scrollbar">
             <p>1. <b>Late Arrivals</b>: Your reservation is held for a maximum of 15 minutes. Beyond this time, we may release your table to other guests waiting on the list.</p>
-            <p>2. <b>Cancellations</b>: Security deposits (for large parties) are non-refundable in the event of a no-show or cancellation made less than 24 hours before the reservation time.</p>
+            <p>2. <b>Stay Duration (Holidays & Weekends)</b>: To accommodate all our guests, stay times are limited on holidays and weekends. For groups of 10 or more, the stay is limited to 2 hours. For groups of less than 10, the stay is limited to 75 minutes.</p>
             <p>3. <b>Property Damage & Costs</b>: By reserving, you agree to be held liable for any physical damage caused to the restaurant’s property, including but not limited to furniture, equipment, or decor. <b>In the event of damage, Diba Restaurant reserves the right to hold your security deposit for an investigation and to cover repair or replacement costs.</b></p>
             <p>4. <b>Conduct</b>: We reserve the right to refuse service or remove guests who are disruptive, intoxicated, or demonstrate behavior that compromises the safety or comfort of our staff and other diners.</p>
             <p>5. <b>Liability</b>: Diba Restaurant is not responsible for lost or stolen personal belongings left on the premises.</p>

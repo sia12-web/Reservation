@@ -61,6 +61,28 @@ export function startCleanupWorker(): Worker {
           }),
         ]);
       }
+
+      // Cleanup stale WAITLIST reservations (startTime passed by 2+ hours with no admin action)
+      const waitlistCutoff = new Date(Date.now() - 2 * 60 * 60_000);
+      const staleWaitlist = await prisma.reservation.findMany({
+        where: {
+          status: "WAITLIST" as any,
+          startTime: { lt: waitlistCutoff },
+        },
+        select: { id: true, shortId: true, clientName: true },
+      });
+
+      for (const res of staleWaitlist) {
+        await prisma.$transaction([
+          prisma.reservationTable.deleteMany({
+            where: { reservationId: res.id },
+          }),
+          prisma.reservation.update({
+            where: { id: res.id },
+            data: { status: "CANCELLED" },
+          }),
+        ]);
+      }
     },
     { connection }
   );

@@ -11,10 +11,12 @@ const RESTAURANT_TZ = "America/Montreal";
 const CLEANUP_BUFFER = 15;
 
 export function calculateDurationMinutes(partySize: number): number {
-  // Simplified rules:
-  // 1-10 people: 90 minutes total (75 base + 15 cleanup)
-  // 11+ people : 120 minutes total (105 base + 15 cleanup)
-  const baseDuration = partySize <= 10 ? 75 : 105;
+  // Stay duration rules:
+  // - Less than 10 guests: 75 minutes stay
+  // - 10 or more guests: 120 minutes stay (2 hours)
+  // Plus CLEANUP_BUFFER for the total slot length.
+
+  const baseDuration = partySize < 10 ? 75 : 120;
   return baseDuration + CLEANUP_BUFFER;
 }
 

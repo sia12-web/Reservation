@@ -130,6 +130,7 @@ enum TableType {
 
 enum ReservationStatus {
   HOLD
+  WAITLIST
   PENDING_DEPOSIT
   CONFIRMED
   CHECKED_IN

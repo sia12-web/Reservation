@@ -93,10 +93,7 @@ export async function createReservation(options: CreateReservationOptions) {
 
     let finalTableIds: string[] = [];
     let moves: { reservationId: string; newTableIds: string[] }[] = [];
-    let isManual = false;
-
     if (manualTableIds && manualTableIds.length > 0) {
-      isManual = true;
       const unavailable = await checkAvailability(prisma, { startTime, endTime });
       const conflictIds = manualTableIds.filter(id => unavailable.includes(id));
       if (conflictIds.length > 0) {
@@ -132,12 +129,17 @@ export async function createReservation(options: CreateReservationOptions) {
       }
     }
 
-    // 4. Deposit Logic
+    // 4. Status & Deposit Logic
     const shortId = generateShortId();
     let status: ReservationStatus = "CONFIRMED";
     let depositStatus: DepositStatus = "NOT_REQUIRED";
 
-    if (!bypassDeposit && partySize >= env.depositThreshold) {
+    const isOverflow = finalTableIds.includes("T15");
+
+    if (isOverflow) {
+      status = "WAITLIST";
+      depositStatus = "NOT_REQUIRED";
+    } else if (!bypassDeposit && partySize >= env.depositThreshold) {
       status = "PENDING_DEPOSIT";
       depositStatus = "PENDING";
     }

@@ -16,10 +16,11 @@ export interface ReservationEmailParams {
     customerNotes?: string;
     cancellationReason?: string;
     isOverflow?: boolean;
+    status?: string;
 }
 
 export async function sendReservationConfirmation(params: ReservationEmailParams) {
-    const { to, clientName, clientPhone, partySize, startTime, shortId, tableIds, customerNotes } = params;
+    const { to, clientName, clientPhone, partySize, startTime, shortId, tableIds, customerNotes, status } = params;
 
     const dateStr = startTime.toLocaleString("en-CA", {
         dateStyle: "full",
@@ -32,17 +33,18 @@ export async function sendReservationConfirmation(params: ReservationEmailParams
     const manageLink = `${frontendBaseUrl}/reservations/manage/${shortId}`;
 
     const isOverflow = tableIds.includes("T15");
-    const statusText = isOverflow 
+    const isWaitlist = status === "WAITLIST" || isOverflow;
+    const statusText = isWaitlist 
         ? "We have received your request!" 
         : "Your reservation at <strong>Diba Restaurant</strong> is confirmed.";
     
-    const messageBody = isOverflow
+    const messageBody = isWaitlist
         ? "We will send you a final reservation confirmation shortly because the restaurant for that date is full. We are working to accommodate your party!"
         : "We are delighted to confirm your reservation. Our team is already preparing to welcome you for an exceptional dining experience!";
 
     const html = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-        <h1 style="color: #1e293b; margin-bottom: 8px; text-align: center;">${isOverflow ? "Request Received" : "Thank You!"}</h1>
+        <h1 style="color: #1e293b; margin-bottom: 8px; text-align: center;">${isWaitlist ? "Request Received" : "Thank You!"}</h1>
         <p style="color: #475569; font-size: 18px; text-align: center; margin-bottom: 24px;">${statusText}</p>
         
         <p style="color: #475569; font-size: 16px;">Hi <strong>${clientName}</strong>,</p>
@@ -54,7 +56,7 @@ export async function sendReservationConfirmation(params: ReservationEmailParams
                 <li style="margin-bottom: 12px;"><strong>👥 Party Size:</strong> ${partySize} guests</li>
                 <li style="margin-bottom: 12px;"><strong>🆔 Confirmation:</strong> <span style="font-family: monospace; background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${shortId}</span></li>
                 ${tableIds.filter(id => id !== 'T15').length > 0 ? `<li style="margin-bottom: 12px;"><strong>🍽️ Tables:</strong> ${tableIds.filter(id => id !== 'T15').join(", ")}</li>` : ""}
-                ${isOverflow ? `<li style="margin-bottom: 12px; color: #b45309;"><strong>⚠️ Status:</strong> Awaiting Final Table Assignment</li>` : ""}
+                ${isWaitlist ? `<li style="margin-bottom: 12px; color: #b45309;"><strong>⚠️ Status:</strong> Awaiting Final Table Assignment</li>` : ""}
             </ul>
         </div>
 
@@ -71,7 +73,7 @@ export async function sendReservationConfirmation(params: ReservationEmailParams
 
         <div style="text-align: center;">
             <p style="color: #475569; font-size: 14px; margin-bottom: 16px;">How was your experience booking with us?</p>
-            <a href="${env.reviewLink}" style="color: #2563eb; font-weight: bold; text-decoration: underline; font-size: 14px;">Leave us a Google Review</a>
+            <a href="${env.reviewLink}" style="color: #2563eb; font-weight: bold; text-decoration: underline; font-size: 14px;">Leave a Review</a>
             <p style="color: #94a3b8; font-size: 12px; margin-top: 8px;">Your feedback helps us provide the best service.</p>
         </div>
     </div>
@@ -82,7 +84,7 @@ export async function sendReservationConfirmation(params: ReservationEmailParams
             from: env.mailFrom,
             to: env.mailFrom, // For now, send to self/admin so it appears in MailHog reliably
             cc: to, // Optional: CC the client so we see intent
-            subject: `Reservation Confirmed - ${shortId}`,
+            subject: isWaitlist ? `Waiting List Request - ${shortId}` : `Reservation Confirmed - ${shortId}`,
             html,
         });
 
@@ -102,7 +104,8 @@ export async function sendReservationConfirmation(params: ReservationEmailParams
             shortId,
             tableIds,
             customerNotes,
-        });
+            status: status || (isWaitlist ? "WAITLIST" : "CONFIRMED")
+        } as any);
         sendTelegramMessage({ chatId: env.telegramChatId, text: telegramMsg }).catch((err) =>
             logger.error({ msg: "Telegram notification failed", error: err })
         );

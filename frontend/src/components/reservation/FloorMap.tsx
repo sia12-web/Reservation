@@ -1,5 +1,7 @@
+
 import type { LayoutResponse, Table } from "../../api/layout.api";
 import clsx from "clsx";
+import React from "react";
 
 type FloorMapProps = {
     layout: LayoutResponse;
@@ -11,6 +13,19 @@ type FloorMapProps = {
     partySize?: number;
 };
 
+// Preset colors for reservation grouping
+const RESERVATION_BORDER_COLORS = [
+    "#10b981", // Emerald
+    "#3b82f6", // Blue
+    "#8b5cf6", // Violet
+    "#f59e0b", // Amber
+    "#ec4899", // Pink
+    "#06b6d4", // Cyan
+    "#f43f5e", // Rose
+    "#84cc16", // Lime
+    "#6366f1", // Indigo
+    "#14b8a6", // Teal
+];
 
 export default function FloorMap({
     layout,
@@ -22,6 +37,62 @@ export default function FloorMap({
     partySize,
 }: FloorMapProps) {
     const PADDING = 40;
+
+    // Determine effective view mode
+    const effectiveIsAdminView = isAdminView || layout.name === "Floor View";
+
+    // Calculate reservation grouping colors (Admin only)
+    const resIdToColor = React.useMemo(() => {
+        if (!effectiveIsAdminView) return {};
+        const mapping: Record<string, string> = {};
+        const now = new Date();
+        let colorIndex = 0;
+
+        layout.tables.forEach(table => {
+            if (!table.reservations || table.reservations.length === 0) return;
+
+            // Find the reservation identifying this table's current state
+            let activeRes = null;
+            if (table.status === 'OCCUPIED') {
+                activeRes = table.reservations.find(r => 
+                    (r.status === 'CHECKED_IN' || r.status === 'CONFIRMED') &&
+                    ((new Date(r.startTime) <= now && new Date(r.endTime) >= now) || r.status === 'CHECKED_IN')
+                );
+                // Snapshot fallback
+                if (!activeRes) activeRes = table.reservations.find(r => r.status === 'CHECKED_IN' || r.status === 'CONFIRMED');
+            } else if (table.status === 'RESERVED') {
+                activeRes = table.reservations.find(r => 
+                    ['CONFIRMED', 'PENDING_DEPOSIT', 'HOLD'].includes(r.status) && 
+                    new Date(r.startTime) > now
+                );
+            }
+
+            if (activeRes && !mapping[activeRes.id]) {
+                mapping[activeRes.id] = RESERVATION_BORDER_COLORS[colorIndex % RESERVATION_BORDER_COLORS.length];
+                colorIndex++;
+            }
+        });
+        return mapping;
+    }, [layout, effectiveIsAdminView]);
+
+    const getTableResId = (table: Table) => {
+        if (!effectiveIsAdminView || !table.reservations) return null;
+        const now = new Date();
+        let activeRes = null;
+        if (table.status === 'OCCUPIED') {
+            activeRes = table.reservations.find(r => 
+                (r.status === 'CHECKED_IN' || r.status === 'CONFIRMED') &&
+                ((new Date(r.startTime) <= now && new Date(r.endTime) >= now) || r.status === 'CHECKED_IN')
+            );
+            if (!activeRes) activeRes = table.reservations.find(r => r.status === 'CHECKED_IN' || r.status === 'CONFIRMED');
+        } else if (table.status === 'RESERVED') {
+            activeRes = table.reservations.find(r => 
+                ['CONFIRMED', 'PENDING_DEPOSIT', 'HOLD'].includes(r.status) && 
+                new Date(r.startTime) > now
+            );
+        }
+        return activeRes?.id || null;
+    };
 
     // Calculate bounds dynamically from tables to ensure they are all visible
     const bounds = layout.tables.length > 0 
@@ -43,8 +114,6 @@ export default function FloorMap({
         bounds.minX = 0; bounds.minY = 0; bounds.maxX = 1000; bounds.maxY = 1000;
     }
 
-    // Determine effective view mode
-    const effectiveIsAdminView = isAdminView || layout.name === "Floor View";
 
     const getTableStatus = (table: Table) => {
         if (unavailableTableIds.includes(table.id)) return 'LOCKED';
@@ -65,8 +134,6 @@ export default function FloorMap({
 
         return table.status || 'AVAILABLE';
     };
-
-    // deleted const isAdminView line
 
 
     return (
@@ -107,20 +174,26 @@ export default function FloorMap({
                             let fillColor = "#ffffff";
                             let strokeColor = "#cbd5e1";
                             let opacity = "1";
+                            let strokeWidth = "2";
 
                             if (isSelected) {
                                 fillColor = "#2563eb"; // Blue
                                 strokeColor = "#1e40af";
+                                strokeWidth = "3";
                             } else if (isDimmed) {
                                 fillColor = "#f1f5f9"; // Slate 100 
                                 strokeColor = "#cbd5e1";
                                 opacity = "0.7";
                             } else if (status === 'OCCUPIED' && effectiveIsAdminView) {
                                 fillColor = "#fffbeb"; // Amber 50
-                                strokeColor = "#fbbf24";
+                                const resId = getTableResId(table);
+                                strokeColor = (resId && resIdToColor[resId]) ? resIdToColor[resId] : "#fbbf24"; // Reservation color or default amber
+                                strokeWidth = (resId && resIdToColor[resId]) ? "6" : "3";
                             } else if (status === 'RESERVED' && effectiveIsAdminView) {
                                 fillColor = "#faf5ff"; // Purple 50
-                                strokeColor = "#a855f7";
+                                const resId = getTableResId(table);
+                                strokeColor = (resId && resIdToColor[resId]) ? resIdToColor[resId] : "#a855f7"; // Reservation color or default purple
+                                strokeWidth = (resId && resIdToColor[resId]) ? "6" : "3";
                             } else {
                                 // Available
                                 strokeColor = "#94a3b8";
@@ -134,7 +207,7 @@ export default function FloorMap({
                             const commonProps = {
                                 fill: fillColor,
                                 stroke: strokeColor,
-                                strokeWidth: "2",
+                                strokeWidth: strokeWidth,
                                 opacity: opacity,
                                 className: clsx(
                                     "transition-all duration-200",
@@ -204,7 +277,7 @@ export default function FloorMap({
                                         {table.id.replace(/[A-Z]/g, "")}
                                     </text>
                                 </g>
-                            );
+                             );
                         })}
                     </svg>
                 </div>
@@ -219,16 +292,16 @@ export default function FloorMap({
                             <span className="text-xs font-medium text-slate-600">Available</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-amber-50 border border-amber-200 shadow-sm" />
+                            <div className="w-3 h-3 rounded-full bg-amber-50 border-2 border-amber-900/10 shadow-sm" />
                             <span className="text-xs font-medium text-slate-600">Occupied</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-purple-50 border border-purple-200 shadow-sm" />
+                            <div className="w-3 h-3 rounded-full bg-purple-50 border-2 border-purple-900/10 shadow-sm" />
                             <span className="text-xs font-medium text-slate-600">Reserved</span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-blue-600 shadow-sm" />
-                            <span className="text-xs font-medium text-slate-600">Your Selection</span>
+                            <div className="w-3 h-3 rounded-full border-t-2 border-b-2 border-l-2 border-r-2 border-black/30 shadow-sm" />
+                            <span className="text-xs font-medium text-slate-600 italic">Border colors group tables of the same person</span>
                         </div>
                     </>
                 ) : (
@@ -242,9 +315,9 @@ export default function FloorMap({
                             <div className="w-3 h-3 rounded-full bg-slate-100 border border-slate-200" />
                             <span className="text-xs font-medium text-slate-600">Unavailable</span>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-blue-600 shadow-sm" />
-                            <span className="text-xs font-medium text-slate-600">Your Selection</span>
+                        <div className="flex items-center gap-2 border-l pl-4 border-slate-200">
+                             <div className="w-3 h-3 rounded-full bg-blue-600 shadow-sm" />
+                             <span className="text-xs font-medium text-slate-600">Your Selection</span>
                         </div>
                     </>
                 )}

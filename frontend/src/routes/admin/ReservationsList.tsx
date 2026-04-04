@@ -97,7 +97,7 @@ export default function ReservationsList() {
             const startOfDay = d.startOf('day').toISOString();
             const endOfDay = d.endOf('day').toISOString();
             return fetchAdminReservations({
-                status: "CONFIRMED,PENDING_DEPOSIT,CHECKED_IN,COMPLETED,CANCELLED,NO_SHOW", // Fetch all statuses for the day
+                status: "CONFIRMED,PENDING_DEPOSIT,WAITLIST,CHECKED_IN,COMPLETED,CANCELLED,NO_SHOW", // Fetch all statuses for the day
                 from: startOfDay,
                 to: endOfDay
             });
@@ -279,6 +279,7 @@ export default function ReservationsList() {
                         <option value="__ACTIVE__">Active (Confirmed/Pending)</option>
                         <option value="CONFIRMED">Confirmed</option>
                         <option value="PENDING_DEPOSIT">Pending Deposit</option>
+                        <option value="WAITLIST">Waiting List</option>
                         <option value="CHECKED_IN">Checked In</option>
                         <option value="COMPLETED">Completed</option>
                         <option value="CANCELLED">Cancelled</option>
@@ -724,6 +725,7 @@ function StatusBadge({ status }: { status: string }) {
         CANCELLED: "bg-red-50 text-red-700 border-red-100",
         NO_SHOW: "bg-orange-50 text-orange-700 border-orange-100",
         PENDING_DEPOSIT: "bg-amber-50 text-amber-700 border-amber-100",
+        WAITLIST: "bg-purple-50 text-purple-700 border-purple-100",
     };
 
     return (

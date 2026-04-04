@@ -88,5 +88,5 @@ function enumerateHourlyBuckets(startTime: Date, endTime: Date): string[] {
 }
 
 function activeReservationStatuses(): ReservationStatus[] {
-  return ["HOLD", "PENDING_DEPOSIT", "CONFIRMED", "CHECKED_IN"];
+  return ["HOLD", "WAITLIST" as ReservationStatus, "PENDING_DEPOSIT", "CONFIRMED", "CHECKED_IN"];
 }
