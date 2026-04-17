@@ -26,6 +26,7 @@ export interface CreateReservationOptions {
   customerNotes?: string;
   internalNotes?: string;
   bypassDeposit?: boolean;
+  marketingOptIn?: boolean;
 }
 
 export async function createReservation(options: CreateReservationOptions) {
@@ -39,7 +40,8 @@ export async function createReservation(options: CreateReservationOptions) {
     tableIds: manualTableIds, 
     customerNotes, 
     internalNotes,
-    bypassDeposit = false
+    bypassDeposit = false,
+    marketingOptIn = false
   } = options;
 
   // 1. Validations
@@ -190,6 +192,7 @@ export async function createReservation(options: CreateReservationOptions) {
           source: source as ReservationSource,
           customerNotes: customerNotes || null,
           internalNotes: internalNotes || null,
+          marketingOptIn,
         },
       });
 

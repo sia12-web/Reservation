@@ -41,6 +41,7 @@ export const reservationSchema = z.object({
   source: z.enum(["WEB", "KIOSK", "PHONE"]).optional(),
   tableIds: z.array(z.string()).optional(), // Manual override
   customerNotes: z.string().max(500).optional(),
+  marketingOptIn: z.boolean().optional().default(false),
 });
 
 // --- Rate Limiters ---

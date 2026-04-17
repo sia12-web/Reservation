@@ -68,6 +68,7 @@ model Reservation {
   lateWarningSent   Boolean            @default(false)
   reminderSent      Boolean            @default(false)
   thankYouSent      Boolean            @default(false)
+  marketingOptIn    Boolean            @default(false)
   payments          Payment[]
   reservationTables ReservationTable[]
 

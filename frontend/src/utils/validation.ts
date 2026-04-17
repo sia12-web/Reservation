@@ -25,6 +25,7 @@ export const reservationRequestSchema = z.object({
   source: z.enum(["KIOSK", "WEB", "PHONE"]).optional(),
   tableIds: z.array(z.string()).optional(),
   customerNotes: z.string().max(500, "Special requests are limited to 500 characters").optional(),
+  marketingOptIn: z.boolean().optional().default(false),
 });
 
 export type ReservationRequest = z.infer<typeof reservationRequestSchema>;

@@ -63,9 +63,13 @@ export default function ClientShell({ children, title, subtitle }: ClientShellPr
             <p className="text-slate-600 text-sm italic">Bring your own wine 🍷</p>
           </div>
         </div>
-        <div className="max-w-4xl mx-auto px-5 py-4 border-t border-slate-100 text-center flex justify-between items-center">
+        <div className="max-w-4xl mx-auto px-5 py-4 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-xs text-slate-400">© 2025 Diba Restaurant. All Reserved.</p>
-
+          <div className="text-xs text-slate-400 text-right">
+            Designed & Developed by <span className="font-semibold text-slate-500">Siavash Shahbazifar</span>
+            <br />
+            <a href="mailto:siavashshahbazifar@gmail.com" className="hover:text-slate-600 transition-colors">siavashshahbazifar@gmail.com</a>
+          </div>
         </div>
       </footer>
     </div>

@@ -58,6 +58,7 @@ export default function ReservationForm({
   const [slotPage, setSlotPage] = useState(0);
   const [selectedTableIds, setSelectedTableIds] = useState<string[]>([]);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [showNetworkModal, setShowNetworkModal] = useState(false);
@@ -224,6 +225,7 @@ export default function ReservationForm({
       source: "KIOSK",
       tableIds: selectedTableIds.length > 0 ? selectedTableIds : undefined,
       customerNotes: specialRequests.trim() || undefined,
+      marketingOptIn,
     };
 
     const validation = reservationRequestSchema.safeParse(payload);
@@ -536,6 +538,20 @@ export default function ReservationForm({
             </div>
             <span className="text-slate-700 font-bold leading-tight group-hover:text-blue-900">
               I have read and agree to all the terms above, including the property damage and liability policies.
+            </span>
+          </label>
+
+          <label className="flex items-start gap-4 p-4 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-green-50 transition-colors select-none group">
+            <div className="pt-1">
+              <input
+                type="checkbox"
+                className="w-6 h-6 rounded-md border-2 border-slate-300 text-green-600 focus:ring-green-500 cursor-pointer"
+                checked={marketingOptIn}
+                onChange={(e) => setMarketingOptIn(e.target.checked)}
+              />
+            </div>
+            <span className="text-slate-700 font-bold leading-tight group-hover:text-green-900">
+              Keep me in the loop! Send me updates on new menus, desserts, and special events.
             </span>
           </label>
       </div>
