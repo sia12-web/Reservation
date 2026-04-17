@@ -66,7 +66,7 @@ export function startCleanupWorker(): Worker {
       const waitlistCutoff = new Date(Date.now() - 2 * 60 * 60_000);
       const staleWaitlist = await prisma.reservation.findMany({
         where: {
-          status: "WAITLIST" as any,
+          status: "WAITLIST",
           startTime: { lt: waitlistCutoff },
         },
         select: { id: true, shortId: true, clientName: true },

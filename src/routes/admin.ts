@@ -214,7 +214,8 @@ router.post(
 
     if (!activeLayout) throw new HttpError(500, "Active layout not configured");
 
-    const lock = await redlock.acquire([`lock:availability:${reservation.startTime.toISOString()}`], 5000);
+    const dateKey = reservation.startTime.toISOString().slice(0, 10);
+    const lock = await redlock.acquire([`lock:reservation:${dateKey}`], 5000);
     try {
       const unavailable = await checkAvailability(prisma, {
         startTime: reservation.startTime,

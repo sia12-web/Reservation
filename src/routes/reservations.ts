@@ -171,7 +171,7 @@ router.get(
     const reservations = await prisma.reservationTable.findMany({
       where: {
         reservation: {
-          status: { in: ["HOLD", "PENDING_DEPOSIT", "CONFIRMED", "CHECKED_IN"] },
+          status: { in: ["HOLD", "WAITLIST", "PENDING_DEPOSIT", "CONFIRMED", "CHECKED_IN"] },
           endTime: { gt: startOfDay },
           startTime: { lt: endOfDay },
         },
@@ -314,8 +314,9 @@ router.post(
       throw new HttpError(404, "Reservation not found");
     }
 
-    if (reservation.status === "CANCELLED") {
-      throw new HttpError(400, "Already cancelled");
+    const cancellable = ["HOLD", "WAITLIST", "PENDING_DEPOSIT", "CONFIRMED"];
+    if (!cancellable.includes(reservation.status)) {
+      throw new HttpError(400, `Cannot cancel a ${reservation.status} reservation`);
     }
 
     await prisma.$transaction(async (tx) => {
@@ -361,6 +362,9 @@ router.post(
   "/reservations/:id/confirm-payment-demo",
   asyncHandler(async (req, res) => {
     const id = req.params.id as string;
+    if (process.env.NODE_ENV === "production") {
+      throw new HttpError(403, "Demo bypass is disabled in production");
+    }
 
     const reservation = await prisma.reservation.findUnique({
       where: { id },

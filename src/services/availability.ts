@@ -33,8 +33,7 @@ export async function checkBlackout(
   prisma: PrismaClient,
   { startTime, endTime }: { startTime: Date; endTime: Date }
 ): Promise<string | null> {
-  // @ts-ignore - Temporary cast until dev server restart releases Prisma lock
-  const blackout = await (prisma as any).blackout.findFirst({
+  const blackout = await prisma.blackout.findFirst({
     where: {
       startTime: { lt: endTime },
       endTime: { gt: startTime },
@@ -88,5 +87,5 @@ function enumerateHourlyBuckets(startTime: Date, endTime: Date): string[] {
 }
 
 function activeReservationStatuses(): ReservationStatus[] {
-  return ["HOLD", "WAITLIST" as ReservationStatus, "PENDING_DEPOSIT", "CONFIRMED", "CHECKED_IN"];
+  return ["HOLD", "WAITLIST", "PENDING_DEPOSIT", "CONFIRMED", "CHECKED_IN"];
 }
