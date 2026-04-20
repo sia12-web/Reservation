@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
+import rateLimit from "express-rate-limit";
 import { env } from "./config/env";
 import reservationsRouter from "./routes/reservations";
 import layoutRouter from "./routes/layout";
@@ -17,7 +18,32 @@ const app = express();
 // Set to true to trust all 'X-Forwarded-*' headers from Render's load balancer
 app.set("trust proxy", 1);
 
+// Global rate limiter as a safety net (applies to all routes except /health and /webhooks)
+const globalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 500, // 500 requests per 15 minutes per IP (generous but prevents obvious abuse)
+    message: { error: "Too many requests from this IP, please try again later" },
+    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    skip: (req) => {
+        // Skip rate limiting for health checks and webhooks (webhooks are validated by Stripe)
+        return req.path === "/health" || req.path.startsWith("/webhooks");
+    },
+    handler: (req, res) => {
+        // Log rate limit violations for security monitoring
+        logger.warn({
+            event: "rate_limit_exceeded",
+            ip: req.ip,
+            path: req.path,
+            method: req.method,
+            userAgent: req.get("user-agent"),
+        }, "Global rate limit exceeded");
+        res.status(429).json({ error: "Too many requests from this IP, please try again later" });
+    },
+});
+
 app.use(helmet());
+app.use(globalLimiter);
 app.use(cors({
     origin: env.allowedOrigins,
     credentials: true,

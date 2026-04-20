@@ -426,18 +426,18 @@ export default function ReservationsList() {
                                             <StatusBadge status={res.status} />
                                         </td>
                                         <td className="px-3 py-2.5 no-print">
-                                            <div className="flex gap-1">
+                                            <div className="flex gap-2">
                                                 {["CONFIRMED", "PENDING_DEPOSIT"].includes(res.status) && (
                                                     <button
                                                         onClick={() => { setSelectedResId(res.id); setIsCancelModalOpen(true); }}
-                                                        className="text-red-600 hover:text-red-900 font-bold px-1.5 py-1 rounded-lg hover:bg-red-50 transition-all text-[10px] border border-slate-100"
+                                                        className="text-red-600 hover:text-red-900 font-bold px-3 py-2 rounded-lg hover:bg-red-50 transition-all text-xs border border-slate-200"
                                                     >
                                                         Cancel
                                                     </button>
                                                 )}
                                                 <Link
                                                     to={`/admin/reservations/${res.id}`}
-                                                    className="text-blue-600 hover:text-blue-900 font-bold px-1.5 py-1 rounded-lg hover:bg-blue-50 transition-all text-[10px] border border-slate-100"
+                                                    className="text-blue-600 hover:text-blue-900 font-bold px-3 py-2 rounded-lg hover:bg-blue-50 transition-all text-xs border border-slate-200"
                                                 >
                                                     Details
                                                 </Link>

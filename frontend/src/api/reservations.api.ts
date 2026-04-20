@@ -20,7 +20,8 @@ export type ReservationResponse = {
 };
 
 export async function createReservation(payload: ReservationRequest): Promise<ReservationResponse> {
-  return httpPost<ReservationResponse>("/reservations", payload);
+  // Use 30s timeout for reservation creation due to Stripe API + DB operations
+  return httpPost<ReservationResponse>("/reservations", payload, { timeoutMs: 30000 });
 }
 
 export async function fetchReservationByShortId(shortId: string): Promise<ReservationResponse> {

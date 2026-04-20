@@ -69,7 +69,7 @@ export async function createReservation(options: CreateReservationOptions) {
   // 2. Distributed Lock
   const dateKey = startTime.toISOString().slice(0, 10);
   const resource = `lock:reservation:${dateKey}`;
-  const lock = await redlock.acquire([resource], 10000); // 10s TTL
+  const lock = await redlock.acquire([resource], 35000); // 35s TTL (accounts for Stripe API + reassignment)
 
   try {
     const blackoutReason = await checkBlackout(prisma, { startTime, endTime });
@@ -258,11 +258,12 @@ export async function createReservation(options: CreateReservationOptions) {
 }
 
 /**
- * Automaticaly release tables for guests who started a booking but never completed payment.
+ * Automatically release tables for guests who started a booking but never completed payment.
  * Runs every minute to keep inventory fresh.
+ * Payment window: 30 minutes from reservation creation.
  */
 export async function cleanupStaleReservations() {
-  const cutoff = new Date(Date.now() - 15 * 60 * 1000); // 15 minutes ago
+  const cutoff = new Date(Date.now() - 30 * 60 * 1000); // 30 minutes ago
 
   const stale = await prisma.reservation.findMany({
     where: {
@@ -296,7 +297,7 @@ export async function cleanupStaleReservations() {
         data: {
           reservationId: res.id,
           action: "SYSTEM_AUTO_CANCEL",
-          reason: "Payment window (15m) expired. Tables released.",
+          reason: "Payment window (30m) expired. Tables released.",
           after: { status: "CANCELLED" }
         }
       });

@@ -50,18 +50,51 @@ const reservationsLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 10,
   message: { error: "Too many reservations created, please try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 const cancellationLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 20,
   message: { error: "Too many cancellation attempts, please try again later" },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 const publicLookupLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 50,
   message: { error: "Too many lookup attempts" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Protect availability checking (light query but needs limiting)
+const availabilityLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 100, // 100 requests per 5 minutes
+  message: { error: "Too many availability checks, please slow down" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Protect slots endpoint (heavy computational operation)
+const slotsLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 30, // 30 requests per 10 minutes (more restrictive due to heavy computation)
+  message: { error: "Too many slot queries, please slow down" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Protect demo bypass endpoint (even though disabled in production)
+const demoBypassLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,
+  message: { error: "Too many demo bypass attempts" },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 
 // --- Public Routes ---
@@ -103,6 +136,7 @@ router.post(
  */
 router.get(
   "/availability",
+  availabilityLimiter,
   asyncHandler(async (req, res) => {
     const { startTime: startTimeStr, partySize: partySizeStr } = req.query;
 
@@ -141,6 +175,7 @@ router.get(
  */
 router.get(
   "/slots",
+  slotsLimiter,
   asyncHandler(async (req, res) => {
     const { date: dateStr, partySize: partySizeStr } = req.query;
 
@@ -361,6 +396,7 @@ router.post(
  */
 router.post(
   "/reservations/:id/confirm-payment-demo",
+  demoBypassLimiter,
   asyncHandler(async (req, res) => {
     const id = req.params.id as string;
     if (process.env.NODE_ENV === "production") {

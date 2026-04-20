@@ -36,27 +36,32 @@ export function isWithinBusinessHours(date: Date): boolean {
   const timeNum = hour * 100 + minute;
 
   // Monday-Thursday (1-4) and Sunday (0)
+  // Open: 11:30, Close: 22:00 (10 PM)
+  // Last bookable: 90 min before close = 20:30 (8:30 PM)
   if (day >= 0 && day <= 4) {
-    // 11:30 - 21:45
-    return timeNum >= 1130 && timeNum <= 2145;
+    return timeNum >= 1130 && timeNum <= 2030;
   }
 
   // Friday & Saturday (5-6)
-  // 11:30 - 22:15
-  return timeNum >= 1130 && timeNum <= 2215;
+  // Open: 11:30, Close: 22:30 (10:30 PM)
+  // Last bookable: 90 min before close = 21:00 (9:00 PM)
+  return timeNum >= 1130 && timeNum <= 2100;
 }
 
 export function getClosingTime(date: Date): Date {
   const d = dayjs(date).tz(RESTAURANT_TZ);
   const day = d.day();
 
-  // Closing: 22:00 (Sun-Thu), 23:00 (Fri-Sat)
-  let closingHours = 22;
+  // Closing: 22:00 (Sun-Thu), 22:30 (Fri-Sat)
+  let closingHour = 22;
+  let closingMinute = 0;
+
   if (day === 5 || day === 6) {
-    closingHours = 23;
+    closingHour = 22;
+    closingMinute = 30;
   }
 
-  return d.hour(closingHours).minute(0).second(0).millisecond(0).toDate();
+  return d.hour(closingHour).minute(closingMinute).second(0).millisecond(0).toDate();
 }
 
 export function parseSafeDate(dateStr: any): Date | null {

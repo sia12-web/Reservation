@@ -2,10 +2,21 @@ import { Router } from "express";
 import { stripe } from "../config/stripe";
 import { env } from "../config/env";
 import { prisma } from "../config/prisma";
+import rateLimit from "express-rate-limit";
 
 const router = Router();
 
-router.post("/stripe", async (req, res) => {
+// Rate limit webhook endpoint as defense in depth
+// Stripe signature validation is primary protection, but this prevents brute force attempts
+const webhookLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 100, // 100 requests per minute (Stripe typically sends much less)
+  message: { error: "Too many webhook attempts" },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+router.post("/stripe", webhookLimiter, async (req, res) => {
   const signature = req.headers["stripe-signature"];
   if (!signature || Array.isArray(signature)) {
     res.status(400).send("Missing Stripe signature");

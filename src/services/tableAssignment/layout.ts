@@ -2,20 +2,20 @@ import { TableConfig } from "./types";
 
 // Note: This file is a fallback/reference. The source of truth is the Database.
 export const TABLES: TableConfig[] = [
-  { id: "T1", type: "STANDARD", minCapacity: 2, maxCapacity: 4, priorityScore: 80 },
-  { id: "T2", type: "STANDARD", minCapacity: 2, maxCapacity: 4, priorityScore: 80 },
-  { id: "T3", type: "STANDARD", minCapacity: 2, maxCapacity: 4, priorityScore: 80 },
+  { id: "T1", type: "STANDARD", minCapacity: 1, maxCapacity: 4, priorityScore: 80 },
+  { id: "T2", type: "STANDARD", minCapacity: 1, maxCapacity: 4, priorityScore: 80 },
+  { id: "T3", type: "STANDARD", minCapacity: 1, maxCapacity: 4, priorityScore: 80 },
   { id: "T4", type: "CIRCULAR", minCapacity: 4, maxCapacity: 7, priorityScore: 2 },
-  { id: "T5", type: "STANDARD", minCapacity: 2, maxCapacity: 4, priorityScore: 1 },
+  { id: "T5", type: "STANDARD", minCapacity: 1, maxCapacity: 4, priorityScore: 1 },
   { id: "T6", type: "CIRCULAR", minCapacity: 4, maxCapacity: 7, priorityScore: 2 },
-  { id: "T7", type: "STANDARD", minCapacity: 2, maxCapacity: 4, priorityScore: 80 },
-  { id: "T8", type: "STANDARD", minCapacity: 2, maxCapacity: 4, priorityScore: 80 },
+  { id: "T7", type: "STANDARD", minCapacity: 1, maxCapacity: 4, priorityScore: 80 },
+  { id: "T8", type: "STANDARD", minCapacity: 1, maxCapacity: 4, priorityScore: 80 },
   { id: "T9", type: "MERGED_FIXED", minCapacity: 6, maxCapacity: 12, priorityScore: 100 },
-  { id: "T10", type: "STANDARD", minCapacity: 2, maxCapacity: 4, priorityScore: 110 },
+  { id: "T10", type: "STANDARD", minCapacity: 1, maxCapacity: 4, priorityScore: 110 },
   { id: "T11", type: "MERGED_FIXED", minCapacity: 8, maxCapacity: 12, priorityScore: 150 },
-  { id: "T12", type: "STANDARD", minCapacity: 2, maxCapacity: 4, priorityScore: 110 },
+  { id: "T12", type: "STANDARD", minCapacity: 1, maxCapacity: 4, priorityScore: 110 },
   { id: "T13", type: "MERGED_FIXED", minCapacity: 6, maxCapacity: 12, priorityScore: 100 },
-  { id: "T14", type: "STANDARD", minCapacity: 2, maxCapacity: 4, priorityScore: 50 },
+  { id: "T14", type: "STANDARD", minCapacity: 1, maxCapacity: 4, priorityScore: 50 },
   { id: "T15", type: "STANDARD", minCapacity: 1, maxCapacity: 20, priorityScore: 0 },
 ];
 

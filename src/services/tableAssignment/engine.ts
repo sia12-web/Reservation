@@ -57,7 +57,8 @@ function buildEligibleTables(
   return Array.from(tableMap.values()).filter((table) => {
     if (!availableSet.has(table.id)) return false;
     if (table.minCapacity > partySize) return false;
-    if (table.type === "CIRCULAR" && partySize > 7) return false;
+    // Circular tables are for parties of 5-7 only (business rule)
+    if (table.type === "CIRCULAR" && (partySize < 5 || partySize > 7)) return false;
     return true;
   });
 }
