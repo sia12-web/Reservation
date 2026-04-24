@@ -3,6 +3,7 @@ import IORedis from "ioredis";
 import { prisma } from "../config/prisma";
 import { stripe } from "../config/stripe";
 import { env } from "../config/env";
+import { refundReservationDeposit } from "../services/stripe";
 
 const connection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
 connection.on("error", (err) => {
@@ -27,6 +28,7 @@ export function startCleanupWorker(): Worker {
   return new Worker(
     "cleanup-pending-deposits",
     async () => {
+      // --- Phase 1: Clean up stale PENDING_DEPOSIT reservations ---
       const cutoff = new Date(Date.now() - 15 * 60_000);
       const stale = await prisma.reservation.findMany({
         where: {
@@ -38,7 +40,7 @@ export function startCleanupWorker(): Worker {
 
       for (const reservation of stale) {
         for (const payment of reservation.payments) {
-          if (payment.providerIntentId) {
+          if (payment.providerIntentId && !payment.providerIntentId.startsWith("pending_")) {
             try {
               await stripe.paymentIntents.cancel(payment.providerIntentId);
             } catch {
@@ -59,17 +61,25 @@ export function startCleanupWorker(): Worker {
             where: { id: reservation.id },
             data: { status: "CANCELLED", depositStatus: "NOT_REQUIRED" },
           }),
+          prisma.auditLog.create({
+            data: {
+              reservationId: reservation.id,
+              action: "SYSTEM_AUTO_CANCEL",
+              reason: "Payment window (15m) expired. Tables released.",
+              after: { status: "CANCELLED" },
+            },
+          }),
         ]);
       }
 
-      // Cleanup stale WAITLIST reservations (startTime passed by 2+ hours with no admin action)
+      // --- Phase 2: Cleanup stale WAITLIST reservations (startTime passed by 2+ hours with no admin action) ---
       const waitlistCutoff = new Date(Date.now() - 2 * 60 * 60_000);
       const staleWaitlist = await prisma.reservation.findMany({
         where: {
           status: "WAITLIST",
           startTime: { lt: waitlistCutoff },
         },
-        select: { id: true, shortId: true, clientName: true },
+        select: { id: true, shortId: true, clientName: true, clientEmail: true, partySize: true, startTime: true, reservationTables: { select: { tableId: true } } },
       });
 
       for (const res of staleWaitlist) {
@@ -81,7 +91,50 @@ export function startCleanupWorker(): Worker {
             where: { id: res.id },
             data: { status: "CANCELLED" },
           }),
+          prisma.auditLog.create({
+            data: {
+              reservationId: res.id,
+              action: "SYSTEM_AUTO_CANCEL",
+              reason: "Waitlist reservation expired (2h past start time).",
+              after: { status: "CANCELLED" },
+            },
+          }),
         ]);
+
+        if (res.clientEmail) {
+          const { sendCancellationEmail } = await import("../services/email");
+          await sendCancellationEmail({
+            to: res.clientEmail,
+            clientName: res.clientName,
+            partySize: res.partySize,
+            startTime: res.startTime,
+            shortId: res.shortId,
+            tableIds: res.reservationTables.map(rt => rt.tableId),
+            cancellationReason: "System auto-cancelled (no tables became available)",
+          });
+        }
+      }
+
+      // --- Phase 3: Fix #2 — Retry failed refunds ---
+      // Find CANCELLED reservations that still have a SUCCEEDED payment (refund was attempted but failed)
+      const stuckRefunds = await prisma.reservation.findMany({
+        where: {
+          status: "CANCELLED",
+          depositStatus: "PAID",
+          payments: {
+            some: { status: "SUCCEEDED" },
+          },
+        },
+        select: { id: true, shortId: true },
+      });
+
+      for (const res of stuckRefunds) {
+        try {
+          await refundReservationDeposit(res.id, "Automated retry: refund failed during cancellation");
+          console.log(`[Cleanup] Retried refund for reservation ${res.shortId}`);
+        } catch (err) {
+          console.error(`[Cleanup] Refund retry failed for ${res.shortId}:`, err);
+        }
       }
     },
     { connection }

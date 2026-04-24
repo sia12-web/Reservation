@@ -89,8 +89,7 @@ export default function ReservationsList() {
         queryFn: () => {
             if (viewMode === 'upcoming') {
                 return fetchAdminReservations({
-                    status: "CONFIRMED,PENDING_DEPOSIT,CHECKED_IN,COMPLETED,CANCELLED,NO_SHOW", // Fetch everything
-                    from: new Date().toISOString(),
+                    from: getRestaurantNow().startOf('day').toISOString(),
                 });
             }
             const d = parseInRestaurantTime(filterDate, "00:00");
@@ -119,7 +118,7 @@ export default function ReservationsList() {
     // 1. Status Filtering
     const statusFiltered = allReservations.filter((r: ReservationAdmin) => {
         if (!filterStatus) return true;
-        if (filterStatus === "__ACTIVE__") return ["CONFIRMED", "PENDING_DEPOSIT"].includes(r.status);
+        if (filterStatus === "__ACTIVE__") return ["CONFIRMED", "PENDING_DEPOSIT", "HOLD", "WAITLIST", "CHECKED_IN"].includes(r.status);
         return r.status === filterStatus;
     });
 
@@ -276,7 +275,7 @@ export default function ReservationsList() {
                         onChange={(e) => setFilterStatus(e.target.value)}
                     >
                         <option value="">Status</option>
-                        <option value="__ACTIVE__">Active (Confirmed/Pending)</option>
+                        <option value="__ACTIVE__">Active (Not Completed/Cancelled)</option>
                         <option value="CONFIRMED">Confirmed</option>
                         <option value="PENDING_DEPOSIT">Pending Deposit</option>
                         <option value="WAITLIST">Waiting List</option>

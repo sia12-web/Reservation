@@ -1,6 +1,5 @@
 import { transporter } from "../config/mail";
 import { env } from "../config/env";
-import { sendTelegramMessage, formatReservationNotification } from "../config/telegram";
 import pino from "pino";
 
 const logger = pino();
@@ -20,7 +19,7 @@ export interface ReservationEmailParams {
 }
 
 export async function sendReservationConfirmation(params: ReservationEmailParams) {
-    const { to, clientName, clientPhone, partySize, startTime, shortId, tableIds, customerNotes, status } = params;
+    const { to, clientName, partySize, startTime, shortId, tableIds, status } = params;
 
     const dateStr = startTime.toLocaleString("en-CA", {
         dateStyle: "full",
@@ -71,11 +70,7 @@ export async function sendReservationConfirmation(params: ReservationEmailParams
             <p style="color: #475569; font-size: 14px; margin-bottom: 16px;">For questions or changes, please call us at <strong>(514) 485-9999</strong>.</p>
         </div>
 
-        <div style="text-align: center;">
-            <p style="color: #475569; font-size: 14px; margin-bottom: 16px;">How was your experience booking with us?</p>
-            <a href="${env.reviewLink}" style="color: #2563eb; font-weight: bold; text-decoration: underline; font-size: 14px;">Leave a Review</a>
-            <p style="color: #94a3b8; font-size: 12px; margin-top: 8px;">Your feedback helps us provide the best service.</p>
-        </div>
+
     </div>
   `;
 
@@ -92,72 +87,9 @@ export async function sendReservationConfirmation(params: ReservationEmailParams
     } catch (error) {
         logger.error({ msg: "Failed to send email", error, to });
     }
-
-    // Send Telegram notification to the owner/staff group
-    if (env.telegramChatId) {
-        const telegramMsg = formatReservationNotification({
-            type: "NEW",
-            clientName,
-            clientPhone: clientPhone || "N/A",
-            partySize,
-            startTime,
-            shortId,
-            tableIds,
-            customerNotes,
-            status: status || (isWaitlist ? "WAITLIST" : "CONFIRMED")
-        } as any);
-        sendTelegramMessage({ chatId: env.telegramChatId, text: telegramMsg }).catch((err) =>
-            logger.error({ msg: "Telegram notification failed", error: err })
-        );
-    }
 }
 
-export async function sendReservationReminder(params: ReservationEmailParams) {
-    const { to, clientName, partySize, startTime, shortId, tableIds: _tableIds } = params;
 
-    const dateStr = new Date(startTime).toLocaleString("en-CA", {
-        dateStyle: "full",
-        timeStyle: "short",
-        timeZone: "America/Montreal",
-    });
-
-    const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-    const manageLink = `${frontendBaseUrl}/reservations/manage/${shortId}`;
-
-    const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
-        <h1 style="color: #0f172a; margin-bottom: 24px; text-align: center;">⏰ Upcoming Reservation</h1>
-        <p style="color: #475569; font-size: 16px;">Hi <strong>${clientName}</strong>,</p>
-        <p style="color: #475569; font-size: 16px;">Just a friendly reminder that your reservation is in <strong>1 hour</strong>.</p>
-        
-        <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 24px 0;">
-            <ul style="list-style: none; padding: 0; margin: 0; color: #334155; font-size: 15px;">
-                <li style="margin-bottom: 12px;"><strong>📅 When:</strong> ${dateStr}</li>
-                <li style="margin-bottom: 12px;"><strong>👥 Party:</strong> ${partySize} guests</li>
-                <li style="margin-bottom: 12px;"><strong>🆔 Code:</strong> <span style="font-family: monospace; background: #e2e8f0; padding: 2px 6px; rounded: 4px;">${shortId}</span></li>
-            </ul>
-        </div>
-
-        <div style="text-align: center; margin-top: 32px; padding-top: 24px; border-top: 1px solid #e2e8f0;">
-            <p style="color: #475569; font-size: 14px;">For changing the date of your reservation, please call us at <strong>(514) 485-9999</strong>.</p>
-            <a href="${manageLink}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block; margin-top: 16px;">Details & Directions</a>
-        </div>
-    </div>
-    `;
-
-    try {
-        await transporter.sendMail({
-            from: env.mailFrom,
-            to: env.mailFrom,
-            cc: to,
-            subject: `Reservation Reminder - ${shortId}`,
-            html,
-        });
-        logger.info({ msg: "Reminder email sent", shortId, to });
-    } catch (error) {
-        logger.error({ msg: "Failed to send reminder email", error, shortId });
-    }
-}
 
 export async function sendLateWarning(params: ReservationEmailParams) {
     const { to, clientName, shortId, startTime } = params;
@@ -199,22 +131,6 @@ export async function sendLateWarning(params: ReservationEmailParams) {
     } catch (error) {
         logger.error({ msg: "Failed to send late warning email", error, shortId });
     }
-
-    // Send URGENT Telegram notification for late arrivals
-    if (env.telegramChatId) {
-        const telegramMsg = formatReservationNotification({
-            type: "LATE",
-            clientName,
-            clientPhone: (params as any).clientPhone || "N/A",
-            partySize: (params as any).partySize || 0,
-            startTime,
-            shortId,
-            tableIds: (params as any).tableIds || [],
-        });
-        sendTelegramMessage({ chatId: env.telegramChatId, text: telegramMsg }).catch((err) =>
-            logger.error({ msg: "Telegram late warning failed", error: err })
-        );
-    }
 }
 
 export async function sendThankYouEmail(params: { to: string; clientName: string; shortId: string }) {
@@ -252,7 +168,7 @@ export async function sendThankYouEmail(params: { to: string; clientName: string
 }
 
 export async function sendDepositRequestEmail(params: ReservationEmailParams) {
-    const { to, clientName, partySize, startTime, shortId, tableIds } = params;
+    const { to, clientName, partySize, startTime, shortId } = params;
 
     const dateStr = startTime.toLocaleString("en-CA", {
         dateStyle: "full",
@@ -297,129 +213,8 @@ export async function sendDepositRequestEmail(params: ReservationEmailParams) {
     } catch (error) {
         logger.error({ msg: "Failed to send deposit request email", error, shortId });
     }
-
-    // Send Telegram notification for pending deposit (Large Party)
-    if (env.telegramChatId) {
-        const telegramMsg = formatReservationNotification({
-            type: "DEPOSIT_REQUIRED",
-            clientName,
-            clientPhone: params.clientPhone || "N/A",
-            partySize,
-            startTime,
-            shortId,
-            tableIds,
-        });
-        sendTelegramMessage({ chatId: env.telegramChatId, text: telegramMsg }).catch((err) =>
-            logger.error({ msg: "Telegram deposit notification failed", error: err })
-        );
-    }
 }
 
-export async function sendMockStripeReceipt(params: { to: string; amount: number; shortId: string; paymentId: string }) {
-    const { to, amount, shortId, paymentId } = params;
-    const amountStr = (amount / 100).toFixed(2);
-    const dateStr = new Date().toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' });
-
-    const html = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 500px; margin: 40px auto; padding: 40px; border-radius: 8px; background-color: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #f0f0f0;">
-        <div style="margin-bottom: 32px; border-bottom: 2px solid #6366f1; padding-bottom: 16px;">
-            <div style="font-weight: 800; color: #6366f1; font-size: 24px; letter-spacing: -0.5px;">STRIPE <span style="color: #94a3b8; font-weight: 400; font-size: 14px; margin-left: 8px;">(SIMULATED)</span></div>
-        </div>
-        
-        <h2 style="color: #1a1f36; font-size: 24px; margin-bottom: 16px; font-weight: 700;">Receipt from Diba Restaurant</h2>
-        <p style="color: #4f566b; font-size: 16px; line-height: 1.5; margin-bottom: 32px;">Receipt #${paymentId.slice(-8).toUpperCase()}</p>
-        
-        <div style="margin-bottom: 32px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 12px; color: #4f566b;">
-                <span>Amount paid</span>
-                <span style="font-weight: 600; color: #1a1f36;">$${amountStr} CAD</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 12px; color: #4f566b;">
-                <span>Date paid</span>
-                <span>${dateStr}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; color: #4f566b;">
-                <span>Payment method</span>
-                <span>Visa - 4242</span>
-            </div>
-        </div>
-        
-        <div style="background-color: #f7fafc; padding: 24px; border-radius: 8px; margin-bottom: 32px;">
-            <p style="margin: 0 0 8px 0; color: #1a1f36; font-weight: 600; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Summary</p>
-            <p style="margin: 0; color: #4f566b; font-size: 15px;">Security Deposit for Reservation <strong>#${shortId}</strong></p>
-        </div>
-        
-        <p style="color: #a3acb9; font-size: 14px; text-align: center; margin-top: 40px;">
-            This is a <strong>simulated</strong> Stripe receipt for demonstration purposes.<br/>
-            Diba Restaurant | 123 Gourmet St, Montreal
-        </p>
-    </div>
-    `;
-
-    try {
-        await transporter.sendMail({
-            from: '"Stripe (Simulated)" <stripe@diba-restaurant.com>',
-            to: env.mailFrom,
-            cc: to,
-            subject: `Fwd: Your receipt from Diba Restaurant ($${amountStr} CAD)`,
-            html,
-        });
-    } catch (error) {
-        logger.error({ msg: "Mock Stripe Email error", error });
-    }
-}
-
-export async function sendMockStripeRefund(params: { to: string; amount: number; shortId: string; paymentId: string }) {
-    const { to, amount, shortId, paymentId } = params;
-    const amountStr = (amount / 100).toFixed(2);
-    
-    const html = `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 500px; margin: 40px auto; padding: 40px; border-radius: 8px; background-color: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #f0f0f0;">
-        <div style="margin-bottom: 32px; border-bottom: 2px solid #ef4444; padding-bottom: 16px;">
-            <div style="font-weight: 800; color: #ef4444; font-size: 24px; letter-spacing: -0.5px;">STRIPE <span style="color: #94a3b8; font-weight: 400; font-size: 14px; margin-left: 8px;">(SIMULATED)</span></div>
-        </div>
-        
-        <h2 style="color: #1a1f36; font-size: 24px; margin-bottom: 16px; font-weight: 700;">Refund from Diba Restaurant</h2>
-        <p style="color: #4f566b; font-size: 16px; line-height: 1.5; margin-bottom: 32px;">The original charge of $${amountStr} (ID: ${paymentId.slice(-8).toUpperCase()}) has been refunded.</p>
-        
-        <div style="margin-bottom: 32px;">
-            <div style="display: flex; justify-content: space-between; margin-bottom: 12px; color: #4f566b;">
-                <span>Refund amount</span>
-                <span style="font-weight: 600; color: #1a1f36;">$${amountStr} CAD</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 12px; color: #4f566b;">
-                <span>Original charge</span>
-                <span>$${amountStr} CAD</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; color: #4f566b;">
-                <span>Refund reason</span>
-                <span>Requested by customer</span>
-            </div>
-        </div>
-        
-        <div style="background-color: #fff5f5; padding: 24px; border-radius: 8px; margin-bottom: 32px; border: 1px solid #fee2e2;">
-            <p style="margin: 0; color: #991b1b; font-size: 15px;">A refund has been issued for your reservation <strong>#${shortId}</strong>. It should appear on your statement within a few business days (timing depends on your bank).</p>
-        </div>
-        
-        <p style="color: #a3acb9; font-size: 14px; text-align: center; margin-top: 40px;">
-            This is a <strong>simulated</strong> Stripe refund notification for demonstration purposes.<br/>
-            Diba Restaurant | 123 Gourmet St, Montreal
-        </p>
-    </div>
-    `;
-
-    try {
-        await transporter.sendMail({
-            from: '"Stripe (Simulated)" <stripe@diba-restaurant.com>',
-            to: env.mailFrom,
-            cc: to,
-            subject: `Fwd: Refund from Diba Restaurant ($${amountStr} CAD)`,
-            html,
-        });
-    } catch (error) {
-        logger.error({ msg: "Mock Stripe Refund Email error", error });
-    }
-}
 
 export async function sendCancellationEmail(params: ReservationEmailParams) {
     const { to, clientName, shortId, tableIds, cancellationReason } = params;

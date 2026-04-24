@@ -43,6 +43,7 @@ const globalLimiter = rateLimit({
 });
 
 app.use(helmet());
+app.get("/favicon.ico", (_req, res) => res.status(204).end());
 app.use(globalLimiter);
 app.use(cors({
     origin: env.allowedOrigins,

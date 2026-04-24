@@ -21,6 +21,21 @@ export const stripe = isDummy
         amount: params.amount,
         metadata: params.metadata,
       }),
+      cancel: async (id: string) => {
+        console.log(`[Mock Stripe] Cancelled payment intent: ${id}`);
+        return { id, status: "canceled" };
+      },
+      retrieve: async (id: string) => ({
+        id,
+        client_secret: "pi_mock_secret_retrieved",
+        status: "requires_payment_method",
+      }),
+    },
+    refunds: {
+      create: async (params: any) => {
+        console.log(`[Mock Stripe] Refund created for: ${params.payment_intent}`);
+        return { id: "re_mock_" + Math.random().toString(36).substr(2, 9), status: "succeeded" };
+      },
     },
     webhooks: {
       constructEvent: (body: any, _sig: any, _secret: any) => {

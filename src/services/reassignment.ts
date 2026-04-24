@@ -28,13 +28,14 @@ export async function trySmartReassignment(
     }
 ): Promise<ReassignmentResult> {
     // 1. Find ALL conflicting assignments in the time window
+    // Fix #4: Include WAITLIST in conflict detection
     const conflicts = await prisma.reservationTable.findMany({
         where: {
             layoutId,
             reservation: {
                 startTime: { lt: endTime },
                 endTime: { gt: startTime },
-                status: { in: ["HOLD", "PENDING_DEPOSIT", "CONFIRMED", "CHECKED_IN"] },
+                status: { in: ["HOLD", "WAITLIST", "PENDING_DEPOSIT", "CONFIRMED", "CHECKED_IN"] },
             },
         },
         include: {
@@ -91,30 +92,9 @@ export async function trySmartReassignment(
         const moves: { reservationId: string; newTableIds: string[] }[] = [];
         let allMoved = true;
 
-        // Calculate the set of tables that would be free if we assume the blocking reservations are lifted
-        // Initially: Free = All - Occupied
-        // But we are looking for spots for the *blocking* reservations.
-        // They can go to currently free spots.
-        // They CANNOT go to spots occupied by *other* (non-blocking) reservations.
-        // They CANNOT go to the `targetTableIds` (obviously).
-
-        // So, `simulatedFree` = All tables EXCEPT (Occupied by non-blocking reservations) AND (targetTableIds)
-        // Actually, `Occupied by non-blocking` is equivalent to `Occupied` minus `Occupied by blocking`.
-
-        // Tables occupied by OTHER reservations (that we are NOT moving)
-        const immutableOccupied = new Set<string>();
-
-        for (const [resId, data] of reservationMap.entries()) {
-            if (!blockingReservations.has(resId)) {
-                data.tableIds.forEach(id => immutableOccupied.add(id));
-            }
-        }
-
-        // Also the new party needs `targetTableIds`, so those are effectively "occupied" by the new party
-
-
-        // Initial valid pool for moving:
-
+        // Fix #11: Track tables already claimed by previous moves in this iteration
+        // to prevent two blocking reservations from being assigned to the same table.
+        const claimedByMoves = new Set<string>();
 
         for (const resId of blockingReservations) {
             const resData = reservationMap.get(resId)!;
@@ -134,7 +114,8 @@ export async function trySmartReassignment(
             // 2. Further exclude the tables targetTableIds because they are reserved for the new party
             // during the [startTime, endTime] window. Since there is an overlap between these windows,
             // we must not move resId into targetTableIds.
-            const restrictedIds = new Set([...unavailableDuringFullStay, ...targetTableIds]);
+            // Fix #11: Also exclude tables already claimed by previous moves in this iteration.
+            const restrictedIds = new Set([...unavailableDuringFullStay, ...targetTableIds, ...claimedByMoves]);
 
             const validPoolForThisMove = allTables
                 .map(t => t.id)
@@ -152,12 +133,10 @@ export async function trySmartReassignment(
                     newTableIds: moveResult.best.tableIds,
                 });
 
-                // Update conflicts mock for subsequent moves in the same scenario?
-                // For simplicity, we assume one move doesn't block another in the same simulated block 
-                // unless they pick the same spot. We should at least track what we just took.
-                // Actually, since we checkAvailability inside the loop now, we should include the previously moved reservations
-                // as "taken" during their NEW windows. 
-                // This is getting complex for a 1-depth reassignment, but let's at least prevent immediate overlaps.
+                // Fix #11: Mark these tables as claimed so subsequent moves can't use them
+                for (const tid of moveResult.best.tableIds) {
+                    claimedByMoves.add(tid);
+                }
             } else {
                 // Cannot move this blocking reservation
                 allMoved = false;

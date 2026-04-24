@@ -32,7 +32,11 @@ export default function ManageReservationPage() {
     });
 
     const cancelMutation = useMutation({
-        mutationFn: (id: string) => cancelReservation(id, "Cancelled by user via manage link"),
+        mutationFn: () => cancelReservation(
+            reservation!.shortId,
+            "Cancelled by user via manage link",
+            reservation!.clientPhone || ""
+        ),
         onSuccess: () => {
             setIsConfirmingCancel(false);
             refetch();
@@ -225,7 +229,7 @@ export default function ManageReservationPage() {
                             <div className="flex flex-col gap-3 pt-2">
                                 <button
                                     disabled={cancelMutation.isPending}
-                                    onClick={() => reservation.id && cancelMutation.mutate(reservation.id)}
+                                    onClick={() => cancelMutation.mutate()}
                                     className="w-full bg-red-600 text-white py-4 rounded-xl font-bold hover:bg-red-700 transition-all disabled:opacity-50"
                                 >
                                     {cancelMutation.isPending ? "Cancelling..." : "Yes, Cancel Booking"}

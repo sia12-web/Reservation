@@ -9,6 +9,7 @@ dayjs.extend(timezone);
 const RESTAURANT_TZ = "America/Montreal";
 
 const CLEANUP_BUFFER = 15;
+const MINIMUM_SERVICEABLE_MINUTES = 45;
 
 export function calculateDurationMinutes(partySize: number): number {
   // Stay duration rules:
@@ -21,10 +22,13 @@ export function calculateDurationMinutes(partySize: number): number {
 }
 
 export function alignToSlotInterval(date: Date, intervalMinutes: number): boolean {
+  // Fix #12: Use restaurant timezone minutes instead of UTC to avoid
+  // coincidental correctness that would break with non-15 intervals
+  const d = dayjs(date).tz(RESTAURANT_TZ);
   return (
-    date.getUTCMinutes() % intervalMinutes === 0 &&
-    date.getUTCSeconds() === 0 &&
-    date.getUTCMilliseconds() === 0
+    d.minute() % intervalMinutes === 0 &&
+    d.second() === 0 &&
+    d.millisecond() === 0
   );
 }
 
@@ -62,6 +66,18 @@ export function getClosingTime(date: Date): Date {
   }
 
   return d.hour(closingHour).minute(closingMinute).second(0).millisecond(0).toDate();
+}
+
+/**
+ * Fix #5: Validate that the clamped endTime still leaves enough serviceable duration.
+ * Returns null if valid, or an error message string if the slot is too short.
+ */
+export function validateMinimumDuration(startTime: Date, endTime: Date): string | null {
+  const effectiveMinutes = (endTime.getTime() - startTime.getTime()) / 60_000;
+  if (effectiveMinutes < MINIMUM_SERVICEABLE_MINUTES) {
+    return `This time slot is too close to closing. Only ${Math.round(effectiveMinutes)} minutes available, minimum is ${MINIMUM_SERVICEABLE_MINUTES}.`;
+  }
+  return null;
 }
 
 export function parseSafeDate(dateStr: any): Date | null {

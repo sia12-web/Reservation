@@ -25,22 +25,6 @@ export async function refundReservationDeposit(reservationId: string, reason?: s
 
         if (isMock) {
             logger.info(`[Mocked] Deposit refund simulated. Internal Reason: ${reason || "N/A"}`);
-            
-            // For demo, send a mock stripe refund email
-            const reservation = await prisma.reservation.findUnique({
-                where: { id: reservationId },
-                select: { clientEmail: true, shortId: true }
-            });
-            
-            if (reservation?.clientEmail) {
-                const { sendMockStripeRefund } = await import("./email");
-                sendMockStripeRefund({
-                    to: reservation.clientEmail,
-                    amount: 5000, 
-                    shortId: reservation.shortId,
-                    paymentId: payment.providerIntentId
-                }).catch(err => logger.error("Mock refund email failed", err));
-            }
         } else {
             await stripe.refunds.create({
                 payment_intent: payment.providerIntentId,

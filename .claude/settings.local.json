@@ -11,7 +11,21 @@
       "Bash(dir:*)",
       "Bash(npm run dev:*)",
       "Bash(curl:*)",
-      "Bash(python -m json.tool:*)"
+      "Bash(python -m json.tool:*)",
+      "Bash(docker ps:*)",
+      "Bash(psql:*)",
+      "Bash(set:*)",
+      "Bash(docker exec:*)",
+      "Bash(taskkill:*)",
+      "Bash(npx nodemon:*)",
+      "Bash(netstat:*)",
+      "Bash(cmd.exe /c \"taskkill /PID 2748 /F\")",
+      "Bash(powershell.exe -Command \"Stop-Process -Id 2748 -Force\")",
+      "Bash(npx prisma db execute:*)",
+      "Bash(echo:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ]
   }
 }

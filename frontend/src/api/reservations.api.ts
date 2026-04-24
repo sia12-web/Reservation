@@ -28,11 +28,9 @@ export async function fetchReservationByShortId(shortId: string): Promise<Reserv
   return httpGet<ReservationResponse>(`/reservations/${shortId}`);
 }
 
-export async function cancelReservation(id: string, reason: string): Promise<{ message: string }> {
-  // NOTE: We might need a public cancellation endpoint or use admin one if we allow public access.
-  // For now, let's assume we add a public one in reservations.ts or just handle it here.
-  // Actually, let's just stick to viewing for now as per user's "see his current reservation" request.
-  return httpPost<{ message: string }>(`/reservations/${id}/cancel`, { reason });
+export async function cancelReservation(shortId: string, reason: string, clientPhone: string): Promise<{ message: string }> {
+  // Fix #10: Use shortId + phone verification instead of UUID
+  return httpPost<{ message: string }>(`/reservations/${shortId}/cancel`, { reason, clientPhone });
 }
 export async function confirmDemoPayment(id: string): Promise<{ message: string }> {
   return httpPost<{ message: string }>(`/reservations/${id}/confirm-payment-demo`, {});

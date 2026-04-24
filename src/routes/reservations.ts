@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { stripe } from "../config/stripe";
 import { asyncHandler } from "../utils/asyncHandler";
-import { calculateDurationMinutes, isWithinBusinessHours, getClosingTime, parseSafeDate } from "../utils/time";
+import { calculateDurationMinutes, isWithinBusinessHours, getClosingTime, parseSafeDate, validateMinimumDuration } from "../utils/time";
 import { HttpError } from "../middleware/errorHandler";
 import { checkAvailability, checkBlackout } from "../services/availability";
 import { findBestTableAssignment } from "../services/tableAssignment/engine";
@@ -11,7 +11,6 @@ import { createReservation } from "../services/reservation";
 import { prisma } from "../config/prisma";
 import rateLimit from "express-rate-limit";
 import { logger } from "../config/logger";
-import { notifyCancelledReservation } from "../services/telegram";
 import { maskPII } from "../utils/masking";
 
 const router = Router();
@@ -158,6 +157,13 @@ router.get(
     const limit = new Date(closingTime.getTime() + 30 * 60_000);
     if (endTime > limit) {
       endTime = closingTime;
+    }
+
+    // Fix #5: Check minimum serviceable duration
+    const durationError = validateMinimumDuration(startTime, endTime);
+    if (durationError) {
+      res.json({ unavailableTableIds: [], blackoutReason: durationError });
+      return;
     }
 
     const blackoutReason = await checkBlackout(prisma, { startTime, endTime });
@@ -320,6 +326,7 @@ router.get(
         id: reservation.id, // Include ID for demo payment bypass
         shortId: reservation.shortId,
         clientName: reservation.clientName,
+        clientPhone: reservation.clientPhone,
         partySize: reservation.partySize,
         startTime: reservation.startTime,
         endTime: reservation.endTime,
@@ -334,20 +341,30 @@ router.get(
 
 /**
  * Public cancellation
+ * Fix #10: Requires shortId + clientPhone for verification to prevent UUID-guessing attacks
  */
 router.post(
-  "/reservations/:id/cancel",
+  "/reservations/:shortId/cancel",
   cancellationLimiter,
   asyncHandler(async (req, res) => {
-    const id = req.params.id as string;
-    const { reason } = req.body;
+    const shortId = req.params.shortId as string;
+    const { reason, clientPhone } = req.body;
+
+    if (!clientPhone) {
+      throw new HttpError(400, "Phone number is required to cancel a reservation");
+    }
 
     const reservation = await prisma.reservation.findUnique({
-      where: { id },
+      where: { shortId },
     });
 
     if (!reservation) {
       throw new HttpError(404, "Reservation not found");
+    }
+
+    // Verify identity via phone number
+    if (reservation.clientPhone !== clientPhone) {
+      throw new HttpError(403, "Phone number does not match this reservation");
     }
 
     const cancellable = ["HOLD", "WAITLIST", "PENDING_DEPOSIT", "CONFIRMED"];
@@ -355,10 +372,12 @@ router.post(
       throw new HttpError(400, `Cannot cancel a ${reservation.status} reservation`);
     }
 
+    const id = reservation.id;
+
     await prisma.$transaction(async (tx) => {
       await tx.reservation.update({
         where: { id },
-        data: { status: "CANCELLED" },
+        data: { status: "CANCELLED", version: { increment: 1 } },
       });
 
       await tx.reservationTable.deleteMany({
@@ -379,13 +398,22 @@ router.post(
     const { refundReservationDeposit } = await import("../services/stripe");
     await refundReservationDeposit(id);
 
-    notifyCancelledReservation({
-      shortId: reservation.shortId,
-      clientName: reservation.clientName,
-      partySize: reservation.partySize,
-      startTime: reservation.startTime,
-      cancellationReason: reason || "User cancelled via management link",
-    }).catch(err => logger.error("Telegram cancellation notification error:", err));
+    await refundReservationDeposit(id);
+
+    if (reservation.clientEmail) {
+      const { sendCancellationEmail } = await import("../services/email");
+      await sendCancellationEmail({
+        to: reservation.clientEmail,
+        clientName: reservation.clientName,
+        partySize: reservation.partySize,
+        startTime: reservation.startTime,
+        shortId: reservation.shortId,
+        tableIds: [], // We deleted them above, but we only need to know if it's overflow
+        // If it was a WAITLIST reservation, we pass T15 so the email template formats correctly
+        cancellationReason: reason || "User cancelled via management link",
+        isOverflow: reservation.status === "WAITLIST"
+      }).catch(err => logger.error("Cancellation email failed", err));
+    }
 
     res.json({ message: "Reservation cancelled successfully" });
   })

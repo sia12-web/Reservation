@@ -192,13 +192,14 @@ router.post(
 const reassignSchema = z.object({
   newTableIds: z.array(z.string()).min(1),
   reason: z.string().min(1),
+  expectedVersion: z.number().int().optional(), // Fix #8: Optimistic concurrency
 });
 
 router.post(
   "/reservations/:id/reassign",
   asyncHandler(async (req: Request, res: Response) => {
     const reservationId = req.params.id as string;
-    const { newTableIds, reason } = reassignSchema.parse(req.body);
+    const { newTableIds, reason, expectedVersion } = reassignSchema.parse(req.body);
 
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId },
@@ -206,6 +207,11 @@ router.post(
     });
 
     if (!reservation) throw new HttpError(404, "Reservation not found");
+
+    // Fix #8: Optimistic concurrency check
+    if (expectedVersion !== undefined && reservation.version !== expectedVersion) {
+      throw new HttpError(409, `Reservation was modified by another action (version ${reservation.version} != expected ${expectedVersion}). Please refresh and try again.`);
+    }
 
     const activeLayout = await prisma.layout.findFirst({
       where: { isActive: true },
@@ -270,11 +276,14 @@ router.post(
           })),
         });
 
-        // 2. Apply Waitlist Upgrade
+        // 2. Apply Waitlist Upgrade + Fix #8: Increment version
+        const updateData: any = { version: { increment: 1 } };
         if (upgradedStatus === "PENDING_DEPOSIT" && paymentIntent) {
+          updateData.status = upgradedStatus;
+          updateData.depositStatus = "PENDING";
           await tx.reservation.update({
             where: { id: reservationId },
-            data: { status: upgradedStatus, depositStatus: "PENDING" }
+            data: updateData,
           });
           await tx.payment.create({
             data: {
@@ -287,9 +296,16 @@ router.post(
             },
           });
         } else if (upgradedStatus === "CONFIRMED") {
+          updateData.status = upgradedStatus;
           await tx.reservation.update({
             where: { id: reservationId },
-            data: { status: upgradedStatus }
+            data: updateData,
+          });
+        } else {
+          // No status change, but still bump version
+          await tx.reservation.update({
+            where: { id: reservationId },
+            data: { version: { increment: 1 } },
           });
         }
 
@@ -337,6 +353,54 @@ router.post(
   })
 );
 
+// Fix #7: Check-in endpoint with proper status validation
+router.post(
+  "/reservations/:id/check-in",
+  asyncHandler(async (req: Request, res: Response) => {
+    const reservationId = req.params.id as string;
+
+    const reservation = await prisma.reservation.findUnique({
+      where: { id: reservationId },
+      include: { reservationTables: true },
+    });
+
+    if (!reservation) throw new HttpError(404, "Reservation not found");
+
+    // Only CONFIRMED reservations can be checked in
+    if (reservation.status !== "CONFIRMED") {
+      throw new HttpError(400, `Cannot check in a ${reservation.status} reservation. Only CONFIRMED reservations can be checked in.`);
+    }
+
+    const now = new Date();
+
+    await prisma.$transaction(async (tx) => {
+      await tx.reservation.update({
+        where: { id: reservationId },
+        data: {
+          status: "CHECKED_IN",
+          checkedInAt: now,
+          version: { increment: 1 },
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          reservationId,
+          action: "RESERVATION_CHECKED_IN",
+          before: maskPII(reservation) as Prisma.JsonObject,
+          after: { status: "CHECKED_IN", checkedInAt: now.toISOString() } as Prisma.JsonObject,
+          reason: "Guest checked in by admin",
+        },
+      });
+    });
+
+    res.json({
+      message: "Guest checked in successfully",
+      checkedInAt: now.toISOString(),
+    });
+  })
+);
+
 router.post(
   "/reservations/:id/cancel",
   asyncHandler(async (req: Request, res: Response) => {
@@ -350,7 +414,10 @@ router.post(
     if (!reservation) throw new HttpError(404, "Reservation not found");
     
     await prisma.$transaction(async (tx) => {
-      await tx.reservation.update({ where: { id: reservationId }, data: { status: "CANCELLED" } });
+      await tx.reservation.update({
+        where: { id: reservationId },
+        data: { status: "CANCELLED", version: { increment: 1 } },
+      });
       await tx.reservationTable.deleteMany({ where: { reservationId } });
       await tx.auditLog.create({
         data: {
@@ -408,14 +475,16 @@ router.post(
       });
     });
 
-    await sendLateWarning({
-      to: reservation.clientEmail || "",
-      clientName: reservation.clientName,
-      partySize: reservation.partySize,
-      startTime: reservation.startTime,
-      shortId: reservation.shortId,
-      tableIds: reservation.reservationTables.map((rt) => rt.tableId)
-    });
+    if (reservation.clientEmail) {
+        await sendLateWarning({
+          to: reservation.clientEmail,
+          clientName: reservation.clientName,
+          partySize: reservation.partySize,
+          startTime: reservation.startTime,
+          shortId: reservation.shortId,
+          tableIds: reservation.reservationTables.map((rt) => rt.tableId)
+        });
+    }
 
     res.json({ message: "Email sent" });
   })
@@ -534,7 +603,6 @@ router.post(
         tableId,
         reservation: {
           status: { in: ["CONFIRMED", "CHECKED_IN", "PENDING_DEPOSIT", "HOLD"] },
-          OR: [{ startTime: { lte: now } }, { status: "CHECKED_IN" }]
         },
       },
       include: { reservation: true },
@@ -547,7 +615,17 @@ router.post(
     await prisma.$transaction(async (tx) => {
       await tx.reservation.update({
         where: { id: reservation.id },
-        data: { status: "COMPLETED", endTime: now, freedAt: now, completedAt: now },
+        data: {
+          status: "COMPLETED",
+          endTime: now,
+          freedAt: now,
+          completedAt: now,
+          version: { increment: 1 },
+        },
+      });
+      // Fix #14: Delete reservation table records to maintain data hygiene
+      await tx.reservationTable.deleteMany({
+        where: { reservationId: reservation.id },
       });
       await tx.auditLog.create({
         data: {
