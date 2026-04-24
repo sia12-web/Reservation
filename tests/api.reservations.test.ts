@@ -15,15 +15,21 @@ const prismaMock = {
   reservation: {
     create: jest.fn(),
   },
+  blackout: {
+    findFirst: jest.fn(),
+  },
   $transaction: jest.fn(),
 };
 
-const redlockMock = {
-  acquire: jest.fn(),
-};
+jest.mock("../src/config/redis", () => ({
+  redlock: {
+    acquire: jest.fn().mockResolvedValue({ release: jest.fn() }),
+  },
+}));
+
+const redlockMock = require("../src/config/redis").redlock;
 
 jest.mock("../src/config/prisma", () => ({ prisma: prismaMock }));
-jest.mock("../src/config/redis", () => ({ redlock: redlockMock }));
 jest.mock("../src/config/stripe", () => ({
   stripe: {
     paymentIntents: {
@@ -42,13 +48,8 @@ const app = require("../src/app").default;
 
 describe("POST /reservations", () => {
   beforeEach(() => {
-    prismaMock.layout.findFirst.mockReset();
-    prismaMock.reservationTable.findFirst.mockReset();
-    prismaMock.reservationTable.findMany.mockReset();
-    prismaMock.reservationTable.createMany.mockReset();
-    prismaMock.reservation.create.mockReset();
-    prismaMock.$transaction.mockReset();
-    redlockMock.acquire.mockReset();
+    jest.clearAllMocks();
+    redlockMock.acquire.mockResolvedValue({ release: jest.fn() });
   });
 
   test("creates a reservation and returns table assignment", async () => {

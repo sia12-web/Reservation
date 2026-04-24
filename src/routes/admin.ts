@@ -190,6 +190,31 @@ router.post(
   })
 );
 
+router.post(
+  "/walkins",
+  asyncHandler(async (req: Request, res: Response) => {
+    const { partySize, clientName } = z.object({
+      partySize: z.number().int().min(1),
+      clientName: z.string().min(1),
+    }).parse(req.body);
+
+    const { reservation, tableIds } = await createReservation({
+      clientName,
+      clientPhone: "WALKIN",
+      partySize,
+      startTime: new Date(),
+      bypassDeposit: true,
+      source: "WALK_IN",
+    });
+
+    res.status(201).json({
+      id: reservation.id,
+      shortId: reservation.shortId,
+      tableIds
+    });
+  })
+);
+
 const reassignSchema = z.object({
   newTableIds: z.array(z.string()).min(1),
   reason: z.string().min(1),

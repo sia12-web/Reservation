@@ -488,4 +488,12 @@ router.post(
   })
 );
 
+export function deriveDepositState(partySize: number) {
+  // Use a threshold of 10 for now
+  const depositThreshold = 10;
+  return partySize > depositThreshold
+    ? { status: "PENDING_DEPOSIT", depositStatus: "PENDING" }
+    : { status: "CONFIRMED", depositStatus: "NOT_REQUIRED" };
+}
+
 export default router;

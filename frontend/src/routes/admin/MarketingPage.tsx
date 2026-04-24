@@ -80,7 +80,7 @@ export default function MarketingPage() {
                         </button>
                         
                         <a 
-                            href="https://app.brevo.com/campaign/list" 
+                            href="https://app.brevo.com/contact/list-listing" 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all active:scale-95 border border-slate-200"

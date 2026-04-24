@@ -15,10 +15,9 @@ export interface AssignmentResult {
 export function getMaxTablesForParty(partySize: number): number {
   if (partySize <= 10) return 2;
   if (partySize <= 15) return 3;
-  if (partySize <= 22) return 4; // Increased to 22
-  if (partySize <= 28) return 5; // Increased to 28
-  if (partySize <= 35) return 6;
-  return 8; 
+  if (partySize <= 22) return 4;
+  if (partySize <= 35) return 8;
+  return 10;
 }
 
 export function findBestTableAssignment(
@@ -144,7 +143,7 @@ function scoreCandidate(tables: TableConfig[], partySize: number): number {
   const waste = totalCapacity - partySize;
 
   // Heavily penalize multiple tables to favor single-table solutions
-  const tableCountPenalty = (tables.length - 1) * 30; // Increased to 30 to strongly favor single tables
+  const tableCountPenalty = (tables.length - 1) * 150; // Increased to 150 to strongly favor single tables over priority gaps
 
   const mismatchPenalty = tables.reduce((sum, table) => {
     // Penalize using a large Merged Fixed table for very small groups if not needed
@@ -268,16 +267,10 @@ export function getGeometricCapacity(tables: TableConfig[]): number {
   // 4 units -> 19 (+4)
   // 5 units -> 24 (+5)
   // 6 units -> 28 (+4)
-  // Formula: Modular tables added together.
-  // 1 unit -> maxCapacity
-  // 2 units -> 10
-  // Each additional unit adds 5.
-  // 3 units -> 15
-  // 4 units -> 20
-  // 5 units -> 25
   let capacity = 10;
   for (let u = 3; u <= totalUnits; u++) {
-    capacity += 5;
+    const increment = u % 2 === 1 ? 5 : 4;
+    capacity += increment;
   }
   return capacity;
 }

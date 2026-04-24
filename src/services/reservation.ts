@@ -44,7 +44,9 @@ export async function createReservation(options: CreateReservationOptions) {
   } = options;
 
   // 1. Validations
-  if (startTime <= new Date()) {
+  // Allow walk-ins to start "now"
+  const isWalkin = source === "WALK_IN";
+  if (!isWalkin && startTime <= new Date()) {
     throw new HttpError(400, "startTime must be in the future");
   }
 
@@ -54,11 +56,11 @@ export async function createReservation(options: CreateReservationOptions) {
     throw new HttpError(400, `Reservations can only be made up to ${env.maxBookingDays} days in advance`);
   }
 
-  if (!alignToSlotInterval(startTime, 15)) {
+  if (!isWalkin && !alignToSlotInterval(startTime, 15)) {
     throw new HttpError(400, "startTime must align to 15-minute intervals");
   }
 
-  if (!isWithinBusinessHours(startTime)) {
+  if (!isWalkin && !isWithinBusinessHours(startTime)) {
     throw new HttpError(400, "startTime is outside business hours");
   }
 
@@ -72,7 +74,7 @@ export async function createReservation(options: CreateReservationOptions) {
   }
 
   // Fix #5: Validate minimum serviceable duration after clamping
-  const durationError = validateMinimumDuration(startTime, endTime);
+  const durationError = !isWalkin ? validateMinimumDuration(startTime, endTime) : null;
   if (durationError) {
     throw new HttpError(400, durationError);
   }

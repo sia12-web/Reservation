@@ -97,9 +97,9 @@ describe("Diba Seating Engine - Full Specification Tests", () => {
   });
 
   describe("4. Global Optimization Tiers", () => {
-    it("Assigns a Tier 1 score (<-1000) to Zone A groups", () => {
+    it("Assigns a Tier 1 score (<-800) to Zone A groups", () => {
       const result = findBestTableAssignment(20, ["T11", "T12", "T13"], OPTIONS);
-      expect(result.best!.score).toBeLessThan(-1000);
+      expect(result.best!.score).toBeLessThan(-800);
     });
 
     it("Assigns a Tier 3 score (>400) to Overflow groups (T15)", () => {

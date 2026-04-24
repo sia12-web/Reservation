@@ -22,6 +22,9 @@ jest.mock("../src/config/prisma", () => ({
         },
         auditLog: {
             create: jest.fn(),
+        },
+        blackout: {
+            findFirst: jest.fn(),
         }
     },
 }));
@@ -36,8 +39,10 @@ jest.mock("../src/config/redis", () => ({
 const prismaMock = (prisma as any);
 prismaMock.$transaction = jest.fn((cb) => cb(prismaMock));
 
+process.env.ADMIN_PIN = "1234";
+process.env.JWT_SECRET = "test-secret";
 const app = require("../src/app").default;
-const ADMIN_PIN = process.env.ADMIN_PIN || "1234";
+const ADMIN_PIN = "1234";
 
 describe("Admin API Endpoints", () => {
     beforeEach(() => {
