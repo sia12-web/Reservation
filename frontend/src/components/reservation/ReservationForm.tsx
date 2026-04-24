@@ -551,7 +551,7 @@ export default function ReservationForm({
               />
             </div>
             <span className="text-slate-700 font-bold leading-tight group-hover:text-green-900">
-              Keep me in the loop! Send me updates on new menus, desserts, and special events.
+              Keep me in the loop! Send me updates on new menus and special events.
             </span>
           </label>
       </div>

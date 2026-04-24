@@ -29,6 +29,8 @@ export const env = {
   smtpUser: process.env.SMTP_USER,
   smtpPass: process.env.SMTP_PASS,
   adminPin: requireInProduction(process.env.ADMIN_PIN, "ADMIN_PIN"),
+  brevoApiKey: process.env.BREVO_API_KEY,
+  brevoListId: Number(process.env.BREVO_LIST_ID ?? "2"),
   depositThreshold: Number(process.env.DEPOSIT_THRESHOLD ?? "10"),
   maxBookingDays: Number(process.env.MAX_BOOKING_DAYS ?? "60"),
   allowedOrigins: (process.env.ALLOWED_ORIGINS ?? "http://localhost:5173").split(",").map(o => o.trim()),

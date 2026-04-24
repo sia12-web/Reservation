@@ -9,6 +9,7 @@ import AdminFloorMap from "./routes/admin/AdminFloorMap";
 import ReservationsList from "./routes/admin/ReservationsList";
 import ReservationDetails from "./routes/admin/ReservationDetails";
 import BlackoutsList from "./routes/admin/BlackoutsList";
+import MarketingPage from "./routes/admin/MarketingPage";
 import ManageReservationPage from "./routes/client/ManageReservationPage";
 
 class ErrorBoundary extends React.Component<
@@ -78,6 +79,7 @@ export default function App() {
             <Route path="reservations" element={<ReservationsList />} />
             <Route path="reservations/:id" element={<ReservationDetails />} />
             <Route path="blackouts" element={<BlackoutsList />} />
+            <Route path="marketing" element={<MarketingPage />} />
           </Route>
         </Route>
 

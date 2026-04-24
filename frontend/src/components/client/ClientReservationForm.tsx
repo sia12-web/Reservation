@@ -41,6 +41,7 @@ export default function ClientReservationForm({ onSuccess }: ClientReservationFo
   const [conflictPayload, setConflictPayload] = useState<ReservationRequest | null>(null);
   const [selectedTableIds, setSelectedTableIds] = useState<string[]>([]);
   const [showMap, setShowMap] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
 
   const { data: layout } = useLayout();
   const { data: availability } = useAvailability(
@@ -191,6 +192,7 @@ export default function ClientReservationForm({ onSuccess }: ClientReservationFo
       partySize,
       startTime: toUtcIso(selectedSlot),
       source: "WEB",
+      marketingOptIn,
     };
 
     const validation = reservationRequestSchema.safeParse(payload);
@@ -338,6 +340,20 @@ export default function ClientReservationForm({ onSuccess }: ClientReservationFo
         />
         <p className="text-xs text-slate-500">Not sent to the reservation system yet.</p>
       </label>
+
+      {/* Marketing Opt-in */}
+      <div className="flex items-start gap-3">
+        <input
+          id="marketing-opt-in"
+          type="checkbox"
+          className="mt-1 h-5 w-5 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+          checked={marketingOptIn}
+          onChange={(e) => setMarketingOptIn(e.target.checked)}
+        />
+        <label htmlFor="marketing-opt-in" className="text-sm text-slate-700 leading-tight">
+          Keep me in the loop! Send me updates on new menus and special events.
+        </label>
+      </div>
 
       {/* Floor Map Section */}
       <div className="space-y-2">

@@ -118,6 +118,7 @@ function CheckoutForm({
 
 export default function StripePaymentModal({
   clientSecret,
+  reservationId,
   onSuccess,
   onCancel,
   amount,

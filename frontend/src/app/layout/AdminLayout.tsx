@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, CalendarDays, LogOut, Menu, X, ShieldAlert } from "lucide-react";
+import { LayoutDashboard, CalendarDays, LogOut, Menu, X, ShieldAlert, Megaphone } from "lucide-react";
 import PromptSystem from "../../components/admin/PromptSystem";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -10,6 +10,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const navItems = [
         { label: "Reservations", path: "/admin/reservations", icon: <CalendarDays className="w-5 h-5" /> },
         { label: "Floor Map", path: "/admin/floor", icon: <LayoutDashboard className="w-5 h-5" /> },
+        { label: "Marketing", path: "/admin/marketing", icon: <Megaphone className="w-5 h-5" /> },
         { label: "Closures", path: "/admin/blackouts", icon: <ShieldAlert className="w-5 h-5" /> },
     ];
 

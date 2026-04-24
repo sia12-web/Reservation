@@ -107,3 +107,17 @@ export async function createBlackout(payload: { startTime: string; endTime: stri
 export async function deleteBlackout(id: string) {
     return httpDelete<{ message: string }>(`/admin/blackouts/${id}`);
 }
+
+// --- Marketing ---
+export interface MarketingContact {
+    email: string;
+    clientName: string;
+}
+
+export async function fetchMarketingContacts(): Promise<MarketingContact[]> {
+    return httpGet<MarketingContact[]>("/admin/marketing/contacts");
+}
+
+export async function syncMarketingContacts() {
+    return httpPost<{ success: boolean; count: number; message: string }>("/admin/marketing/sync", {});
+}

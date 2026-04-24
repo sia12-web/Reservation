@@ -16,6 +16,7 @@ import { refundReservationDeposit } from "../services/stripe";
 import { stripe } from "../config/stripe";
 import { env } from "../config/env";
 import { Prisma, ReservationStatus, ReservationSource } from "@prisma/client";
+import { getOptedInContacts, syncContactsToBrevo } from "../services/marketing";
 
 const router = Router();
 
@@ -764,6 +765,24 @@ router.delete(
     });
 
     res.json({ message: "Blackout deleted" });
+  })
+);
+
+// --- Marketing Routes ---
+
+router.get(
+  "/marketing/contacts",
+  asyncHandler(async (_req: Request, res: Response) => {
+    const contacts = await getOptedInContacts();
+    res.json(contacts);
+  })
+);
+
+router.post(
+  "/marketing/sync",
+  asyncHandler(async (_req: Request, res: Response) => {
+    const result = await syncContactsToBrevo();
+    res.json(result);
   })
 );
 
