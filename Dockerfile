@@ -32,13 +32,12 @@ WORKDIR /app
 # Install OpenSSL for Prisma and wget for healthcheck
 RUN apt-get update -y && apt-get install -y openssl wget && rm -rf /var/lib/apt/lists/*
 
-# Copy package files and install production dependencies only
+# Copy package files and Prisma schema
 COPY package*.json ./
-RUN npm ci --omit=dev
-
-# Copy Prisma schema and generate client
 COPY prisma ./prisma/
-RUN npx prisma generate
+
+# Install production dependencies (this will trigger postinstall -> prisma generate)
+RUN npm ci --omit=dev
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
