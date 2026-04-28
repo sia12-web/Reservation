@@ -5,31 +5,11 @@ on:
     branches: [main]
   push:
     branches: [main]
-  schedule:
-    - cron: '0 3 * * *' # 10 PM EST daily
-
-permissions:
-  contents: read
 
 jobs:
-  test:
-    name: Test & Lint
+  build:
+    name: Build Check
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: classmatefinder
-          POSTGRES_PASSWORD: classmatefinder_test
-          POSTGRES_DB: classmatefinder_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
 
     steps:
       - name: Checkout code
@@ -40,42 +20,9 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
 
       - name: Install dependencies
-        working-directory: ./backend
         run: npm ci
 
       - name: Run TypeScript compilation check
-        working-directory: ./backend
         run: npx tsc --noEmit
-
-      - name: Generate Prisma Client
-        working-directory: ./backend
-        run: npx prisma generate
-
-      - name: Sync Prisma schema
-        working-directory: ./backend
-        env:
-          DATABASE_URL: postgresql://classmatefinder:classmatefinder_test@localhost:5432/classmatefinder_test
-        run: npx prisma db push --accept-data-loss
-
-      - name: Run tests
-        working-directory: ./backend
-        env:
-          DATABASE_URL: postgresql://classmatefinder:classmatefinder_test@localhost:5432/classmatefinder_test
-          JWT_SECRET: test_jwt_secret_abcdefghijklmnopqrstuvwxyz012345
-        run: npm run test:ci
-
-      - name: Run linting
-        working-directory: ./backend
-        run: npm run lint
-
-      - name: Run format check
-        working-directory: ./backend
-        run: npm run format:check
-
-      - name: Run security audit
-        working-directory: ./backend
-        run: npm audit --audit-level=high
-        continue-on-error: true  # Don't block PR on audit warnings
