@@ -4,16 +4,22 @@ import type Redlock from "redlock";
 export interface AvailabilityParams {
   startTime: Date;
   endTime: Date;
-  excludeReservationId?: string;
+  excludeReservationId?: string | string[];
 }
 
 export async function checkAvailability(
   prisma: PrismaClient,
   { startTime, endTime, excludeReservationId }: AvailabilityParams
 ): Promise<string[]> {
+  const excludeCondition = excludeReservationId
+    ? (Array.isArray(excludeReservationId)
+        ? { notIn: excludeReservationId }
+        : { not: excludeReservationId })
+    : undefined;
+
   const reservations = await prisma.reservationTable.findMany({
     where: {
-      reservationId: excludeReservationId ? { not: excludeReservationId } : undefined,
+      reservationId: excludeCondition,
       reservation: {
         startTime: { lt: endTime },
         endTime: { gt: startTime },

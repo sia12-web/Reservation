@@ -156,8 +156,17 @@ export async function createReservation(options: CreateReservationOptions) {
     // Re-verify availability inside the lock to catch concurrent reservations
     // that may have committed between our optimistic check and lock acquisition
     if (!manualTableIds || manualTableIds.length === 0) {
-      const recheck = await checkAvailability(prisma, { startTime, endTime });
-      const conflicting = finalTableIds.filter(id => recheck.includes(id));
+      const movingReservationIds = moves.map(m => m.reservationId);
+      const recheck = await checkAvailability(prisma, { 
+        startTime, 
+        endTime, 
+        excludeReservationId: movingReservationIds.length > 0 ? movingReservationIds : undefined 
+      });
+      const allIntendedTableIds = [
+        ...finalTableIds,
+        ...moves.flatMap(m => m.newTableIds)
+      ];
+      const conflicting = allIntendedTableIds.filter(id => recheck.includes(id));
       if (conflicting.length > 0) {
         // Tables were taken between our optimistic check and lock acquisition.
         // Re-run assignment with updated availability instead of rejecting the guest.
