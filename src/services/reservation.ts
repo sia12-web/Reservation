@@ -133,7 +133,8 @@ export async function createReservation(options: CreateReservationOptions) {
        } else if (assignment.best) {
            finalTableIds = assignment.best.tableIds;
        } else {
-           throw new HttpError(409, "No available tables found for the requested time");
+           // No tables available even after reassignment — fall back to waitlist
+           finalTableIds = ["T15"];
        }
     }
   }
@@ -158,7 +159,20 @@ export async function createReservation(options: CreateReservationOptions) {
       const recheck = await checkAvailability(prisma, { startTime, endTime });
       const conflicting = finalTableIds.filter(id => recheck.includes(id));
       if (conflicting.length > 0) {
-        throw new HttpError(409, `Tables ${conflicting.join(", ")} were just booked. Please try again.`);
+        // Tables were taken between our optimistic check and lock acquisition.
+        // Re-run assignment with updated availability instead of rejecting the guest.
+        logger.warn({ msg: "Race condition: re-running assignment inside lock", conflicting });
+        const freshAvailable = tableConfigs.map(t => t.id).filter(id => !recheck.includes(id));
+        const retry = findBestTableAssignment(partySize, freshAvailable, { tables: tableConfigs, adjacency });
+
+        if (retry.best && (partySize < 10 || retry.best.score <= -1000)) {
+          finalTableIds = retry.best.tableIds;
+          moves = []; // Clear any stale reassignment moves
+        } else {
+          // No tables available at all — fall back to waitlist (T15)
+          finalTableIds = ["T15"];
+          moves = [];
+        }
       }
     }
 
@@ -245,12 +259,18 @@ export async function createReservation(options: CreateReservationOptions) {
           },
         });
         paymentRecordId = created.id;
+
+        // Track when deposit was requested for timeout calculation
+        await tx.reservation.update({
+          where: { id: reservation.id },
+          data: { depositRequestedAt: new Date() },
+        });
       }
 
       // Notifications (Fire and forget inside transaction context)
       const email = reservation.clientEmail;
       if (email) {
-          if (status === "CONFIRMED") {
+          if (status === "CONFIRMED" || status === "WAITLIST") {
              sendReservationConfirmation({
                  to: email,
                  clientName,
@@ -258,7 +278,8 @@ export async function createReservation(options: CreateReservationOptions) {
                  partySize,
                  startTime,
                  shortId,
-                 tableIds: finalTableIds
+                 tableIds: finalTableIds,
+                 status, // Pass status so email template knows WAITLIST vs CONFIRMED
              }).catch(e => logger.error("Email failed", e));
           }
           // Note: deposit email is sent AFTER Stripe intent is created (below)

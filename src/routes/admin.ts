@@ -314,6 +314,7 @@ router.post(
         if (upgradedStatus === "PENDING_DEPOSIT" && paymentIntent) {
           updateData.status = upgradedStatus;
           updateData.depositStatus = "PENDING";
+          updateData.depositRequestedAt = new Date(); // Track when deposit was actually requested
           await tx.reservation.update({
             where: { id: reservationId },
             data: updateData,

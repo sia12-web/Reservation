@@ -30,6 +30,8 @@ export default function ReservationSuccessPage() {
           <p className="text-xl text-slate-600 font-medium">
             {reservation?.status === "PENDING_DEPOSIT" 
               ? "Request Received" 
+              : reservation?.status === "WAITLIST"
+              ? "You're on our waiting list!"
               : "Your reservation is confirmed."}
           </p>
         </div>
@@ -73,6 +75,36 @@ export default function ReservationSuccessPage() {
                  <p className="text-red-700 font-bold">
                    Payment must be completed in 15 minutes or your table will be released.
                  </p>
+               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Waitlist Instructions */}
+        {reservation?.status === "WAITLIST" && (
+          <div className="bg-purple-50 border-2 border-purple-200 rounded-2xl p-6 space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="flex items-start gap-4">
+              <div className="p-3 bg-white rounded-xl text-purple-600 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-xl font-bold text-purple-900">You're on the Waiting List</h3>
+                <p className="text-purple-800 font-medium leading-relaxed">
+                  All tables are currently reserved for this time. We've added you to our waiting list.
+                </p>
+              </div>
+            </div>
+            
+            <div className="bg-white/60 rounded-xl p-5 border border-purple-100 space-y-3">
+               <div className="flex gap-3">
+                 <div className="w-6 h-6 bg-purple-200 text-purple-900 rounded-full flex items-center justify-center font-black text-xs shrink-0">1</div>
+                 <p className="text-purple-900 font-semibold">If a table opens up, we'll notify you immediately.</p>
+               </div>
+               <div className="flex gap-3">
+                 <div className="w-6 h-6 bg-purple-200 text-purple-900 rounded-full flex items-center justify-center font-black text-xs shrink-0">2</div>
+                 <p className="text-purple-900 font-semibold">No action needed — just keep your phone nearby.</p>
                </div>
             </div>
           </div>

@@ -30,11 +30,20 @@ export function startCleanupWorker(): Worker {
     "cleanup-pending-deposits",
     async () => {
       // --- Phase 1: Clean up stale PENDING_DEPOSIT reservations ---
-      const cutoff = new Date(Date.now() - 15 * 60_000);
+      // Direct reservations: 15-minute window (they see the payment form immediately)
+      // Promoted waitlist guests: 60-minute window (they need time to check email)
+      const directCutoff = new Date(Date.now() - 15 * 60_000);
+      const promotedCutoff = new Date(Date.now() - 60 * 60_000);
+
       const stale = await prisma.reservation.findMany({
         where: {
           status: "PENDING_DEPOSIT",
-          createdAt: { lt: cutoff },
+          OR: [
+            // Direct reservations: depositRequestedAt is null, check createdAt
+            { depositRequestedAt: null, createdAt: { lt: directCutoff } },
+            // Promoted waitlist: depositRequestedAt is set, check it with 60m window
+            { depositRequestedAt: { not: null, lt: promotedCutoff } },
+          ],
         },
         include: { payments: true },
       });
@@ -82,7 +91,9 @@ export function startCleanupWorker(): Worker {
             startTime: reservation.startTime,
             shortId: reservation.shortId,
             tableIds: [],
-            cancellationReason: "Your reservation was automatically cancelled because the security deposit was not completed within 15 minutes. Please rebook if you'd like to reserve again.",
+            cancellationReason: reservation.depositRequestedAt
+              ? "Your reservation was automatically cancelled because the security deposit was not completed within 60 minutes. Please rebook if you'd like to reserve again."
+              : "Your reservation was automatically cancelled because the security deposit was not completed within 15 minutes. Please rebook if you'd like to reserve again.",
           }).catch(err => logger.error({ err, shortId: reservation.shortId }, "[Cleanup] Failed to send deposit expiry email"));
         }
       }

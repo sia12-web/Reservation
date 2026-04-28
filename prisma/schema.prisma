@@ -66,6 +66,7 @@ model Reservation {
   completedAt       DateTime?
   freedAt           DateTime?
   lateWarningSent   Boolean            @default(false)
+  depositRequestedAt DateTime?          @db.Timestamptz(6)
   reminderSent      Boolean            @default(false)
   thankYouSent      Boolean            @default(false)
   marketingOptIn    Boolean            @default(false)

@@ -207,10 +207,6 @@ function wouldCombineCircular(
   if (candidate.id === "T5") return true;
   if (tablesInPath.some(t => t.id === "T5")) return true;
 
-  // Isolation Rule: T12 and T14 cannot be in the same combination
-  if (candidate.id === "T12" && tablesInPath.some(t => t.id === "T14")) return true;
-  if (candidate.id === "T14" && tablesInPath.some(t => t.id === "T12")) return true;
-
   return false;
 }
 
