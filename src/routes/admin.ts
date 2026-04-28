@@ -36,7 +36,7 @@ const listQuerySchema = z.object({
   to: z.string().optional(),
   status: z.string().optional(),
   tableId: z.string().optional(),
-  phone: z.string().optional(),
+  phone: z.string().max(20).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
   cursor: z.string().optional(),
   waitlistOnly: z.coerce.boolean().optional().default(false),
@@ -207,9 +207,16 @@ router.post(
       source: "WALK_IN",
     });
 
+    // Per spec: walk-ins are immediately CHECKED_IN, not CONFIRMED
+    await prisma.reservation.update({
+      where: { id: reservation.id },
+      data: { status: "CHECKED_IN", checkedInAt: new Date() },
+    });
+
     res.status(201).json({
       id: reservation.id,
       shortId: reservation.shortId,
+      status: "CHECKED_IN",
       tableIds
     });
   })
@@ -673,7 +680,7 @@ router.post(
 router.get("/ping", (_req, res) => res.json({ pong: true }));
 
 router.get("/debug/force-seed", asyncHandler(async (_req: Request, res: Response) => {
-  if (process.env.NODE_ENV === "production") throw new HttpError(403, "Seed disabled");
+  if (process.env.NODE_ENV === "production") throw new HttpError(403, "Debug endpoints disabled in production");
   if (await prisma.table.count() > 0) { res.json({ message: "Already seeded" }); return; }
 
   const layout = await prisma.layout.create({
@@ -685,20 +692,20 @@ router.get("/debug/force-seed", asyncHandler(async (_req: Request, res: Response
   });
 
   const tables = [
-    { id: "T1", x: 280, y: 480, width: 120, height: 70, shape: "RECTANGLE", minCapacity: 2, maxCapacity: 4, type: "STANDARD", priorityScore: 1 },
-    { id: "T2", x: 440, y: 480, width: 120, height: 70, shape: "RECTANGLE", minCapacity: 2, maxCapacity: 4, type: "STANDARD", priorityScore: 1 },
-    { id: "T3", x: 600, y: 480, width: 120, height: 70, shape: "RECTANGLE", minCapacity: 2, maxCapacity: 4, type: "STANDARD", priorityScore: 1 },
+    { id: "T1", x: 280, y: 480, width: 120, height: 70, shape: "RECTANGLE", minCapacity: 1, maxCapacity: 4, type: "STANDARD", priorityScore: 1 },
+    { id: "T2", x: 440, y: 480, width: 120, height: 70, shape: "RECTANGLE", minCapacity: 1, maxCapacity: 4, type: "STANDARD", priorityScore: 1 },
+    { id: "T3", x: 600, y: 480, width: 120, height: 70, shape: "RECTANGLE", minCapacity: 1, maxCapacity: 4, type: "STANDARD", priorityScore: 1 },
     { id: "T15", x: 830, y: 450, width: 120, height: 70, shape: "RECTANGLE", minCapacity: 1, maxCapacity: 20, type: "STANDARD", priorityScore: 0 },
-    { id: "T7", x: 50, y: 400, width: 120, height: 70, shape: "RECTANGLE", minCapacity: 2, maxCapacity: 4, type: "STANDARD", priorityScore: 1 },
-    { id: "T8", x: 50, y: 300, width: 120, height: 70, shape: "RECTANGLE", minCapacity: 2, maxCapacity: 4, type: "STANDARD", priorityScore: 1 },
+    { id: "T7", x: 50, y: 400, width: 120, height: 70, shape: "RECTANGLE", minCapacity: 1, maxCapacity: 4, type: "STANDARD", priorityScore: 1 },
+    { id: "T8", x: 50, y: 300, width: 120, height: 70, shape: "RECTANGLE", minCapacity: 1, maxCapacity: 4, type: "STANDARD", priorityScore: 1 },
     { id: "T6", x: 350, y: 330, width: 90, height: 90, shape: "CIRCLE", minCapacity: 4, maxCapacity: 7, type: "CIRCULAR", priorityScore: 2 },
-    { id: "T5", x: 500, y: 320, width: 70, height: 110, shape: "RECTANGLE", minCapacity: 2, maxCapacity: 4, type: "STANDARD", priorityScore: 1 },
+    { id: "T5", x: 500, y: 320, width: 70, height: 110, shape: "RECTANGLE", minCapacity: 1, maxCapacity: 4, type: "STANDARD", priorityScore: 1 },
     { id: "T4", x: 650, y: 330, width: 90, height: 90, shape: "CIRCLE", minCapacity: 4, maxCapacity: 7, type: "CIRCULAR", priorityScore: 2 },
-    { id: "T14", x: 830, y: 320, width: 120, height: 70, shape: "RECTANGLE", minCapacity: 2, maxCapacity: 4, type: "STANDARD", priorityScore: 1 },
+    { id: "T14", x: 830, y: 320, width: 120, height: 70, shape: "RECTANGLE", minCapacity: 1, maxCapacity: 4, type: "STANDARD", priorityScore: 1 },
     { id: "T9", x: 50, y: 50, width: 120, height: 150, shape: "RECTANGLE", minCapacity: 6, maxCapacity: 12, type: "MERGED_FIXED", priorityScore: 3 },
-    { id: "T10", x: 220, y: 80, width: 70, height: 110, shape: "RECTANGLE", minCapacity: 2, maxCapacity: 4, type: "STANDARD", priorityScore: 1 },
+    { id: "T10", x: 220, y: 80, width: 70, height: 110, shape: "RECTANGLE", minCapacity: 1, maxCapacity: 4, type: "STANDARD", priorityScore: 1 },
     { id: "T11", x: 350, y: 80, width: 220, height: 70, shape: "RECTANGLE", minCapacity: 8, maxCapacity: 12, type: "MERGED_FIXED", priorityScore: 3 },
-    { id: "T12", x: 650, y: 80, width: 70, height: 110, shape: "RECTANGLE", minCapacity: 2, maxCapacity: 4, type: "STANDARD", priorityScore: 1 },
+    { id: "T12", x: 650, y: 80, width: 70, height: 110, shape: "RECTANGLE", minCapacity: 1, maxCapacity: 4, type: "STANDARD", priorityScore: 1 },
     { id: "T13", x: 800, y: 50, width: 120, height: 150, shape: "RECTANGLE", minCapacity: 6, maxCapacity: 12, type: "MERGED_FIXED", priorityScore: 3 },
   ];
 
@@ -710,6 +717,7 @@ router.get("/debug/force-seed", asyncHandler(async (_req: Request, res: Response
 }));
 
 router.post("/debug/reset-reservations", asyncHandler(async (req: Request, res: Response) => {
+  if (process.env.NODE_ENV === "production") throw new HttpError(403, "Debug endpoints disabled in production");
   if (req.body.confirmCode !== "CONFIRM_RESET") throw new HttpError(400, "Wrong code");
   await prisma.reservationTable.deleteMany({});
   await prisma.payment.deleteMany({});

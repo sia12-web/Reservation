@@ -99,33 +99,6 @@ export default function ClientReservationForm({ onSuccess }: ClientReservationFo
         onSuccess(response);
       },
       onError: (error) => {
-        // #region agent log
-        fetch("http://127.0.0.1:7242/ingest/b059efa1-b0a0-4c8f-848d-af5db46f8072", {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            sessionId: "debug-session",
-            runId: "pre-fix",
-            hypothesisId: "B",
-            location: "src/components/client/ClientReservationForm.tsx:submitPayload",
-            message: "mutation error",
-            data: {
-              isApiError: error instanceof ApiError,
-              apiStatus: error instanceof ApiError ? error.status : undefined,
-              apiIsNetworkError: error instanceof ApiError ? error.isNetworkError : undefined,
-              errorName: error instanceof Error ? error.name : typeof error,
-              errorMessage: error instanceof Error ? error.message : undefined,
-              // no PII: only non-identifying fields
-              partySize: payload.partySize,
-              source: payload.source,
-              startTime: payload.startTime,
-            },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => { });
-        // #endregion
-
         if (error instanceof ApiError && error.isNetworkError) {
           setShowNetworkModal(true);
           return;

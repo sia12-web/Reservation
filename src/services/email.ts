@@ -4,6 +4,14 @@ import pino from "pino";
 
 const logger = pino();
 
+// In production, send directly to the guest. In dev, send to admin (MailHog) with guest in CC.
+function emailRecipients(guestEmail: string) {
+    if (env.nodeEnv === "production") {
+        return { to: guestEmail, cc: undefined };
+    }
+    return { to: env.mailFrom, cc: guestEmail };
+}
+
 export interface ReservationEmailParams {
     to: string;
     clientName: string;
@@ -77,8 +85,7 @@ export async function sendReservationConfirmation(params: ReservationEmailParams
     try {
         const info = await transporter.sendMail({
             from: env.mailFrom,
-            to: env.mailFrom, // For now, send to self/admin so it appears in MailHog reliably
-            cc: to, // Optional: CC the client so we see intent
+            ...emailRecipients(to),
             subject: isWaitlist ? `Waiting List Request - ${shortId}` : `Reservation Confirmed - ${shortId}`,
             html,
         });
@@ -122,8 +129,7 @@ export async function sendLateWarning(params: ReservationEmailParams) {
     try {
         await transporter.sendMail({
             from: env.mailFrom,
-            to: env.mailFrom,
-            cc: to,
+            ...emailRecipients(to),
             subject: `Urgent: Reservation Status - ${shortId}`,
             html,
         });
@@ -156,8 +162,7 @@ export async function sendThankYouEmail(params: { to: string; clientName: string
     try {
         await transporter.sendMail({
             from: env.mailFrom,
-            to: env.mailFrom,
-            cc: to,
+            ...emailRecipients(to),
             subject: `Thank you for dining with us! - ${clientName}`,
             html,
         });
@@ -204,8 +209,7 @@ export async function sendDepositRequestEmail(params: ReservationEmailParams) {
     try {
         await transporter.sendMail({
             from: env.mailFrom,
-            to: env.mailFrom,
-            cc: to,
+            ...emailRecipients(to),
             subject: `Action Required: Deposit for Reservation ${shortId}`,
             html,
         });
@@ -247,8 +251,7 @@ export async function sendCancellationEmail(params: ReservationEmailParams) {
     try {
         await transporter.sendMail({
             from: env.mailFrom,
-            to: env.mailFrom,
-            cc: to,
+            ...emailRecipients(to),
             subject: `${isOverflow ? "Waitlist Status Update" : "Reservation Cancelled"} - ${shortId}`,
             html,
         });

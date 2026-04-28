@@ -1,5 +1,5 @@
 import React from "react";
-import { Route, Routes, Navigate, Outlet } from "react-router-dom";
+import { Route, Routes, Navigate, Outlet, useParams } from "react-router-dom";
 import NewReservationPage from "./routes/kiosk/NewReservationPage";
 import ReservationSuccessPage from "./routes/kiosk/ReservationSuccessPage";
 import InactivityGuard from "./components/kiosk/InactivityGuard";
@@ -11,6 +11,11 @@ import ReservationDetails from "./routes/admin/ReservationDetails";
 import BlackoutsList from "./routes/admin/BlackoutsList";
 import MarketingPage from "./routes/admin/MarketingPage";
 import ManageReservationPage from "./routes/client/ManageReservationPage";
+
+function LegacySuccessRedirect() {
+  const { id } = useParams<{ id: string }>();
+  return <Navigate to={`/reservations/${id}/success`} replace />;
+}
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
@@ -85,7 +90,7 @@ export default function App() {
 
         {/* Legacy /reserve -> Redirect to Reservations */}
         <Route path="/reserve" element={<Navigate to="/reservations" replace />} />
-        <Route path="/reserve/success/:id" element={<Navigate to={`/reservations/${window.location.pathname.split('/').pop()}/success`} replace />} />
+        <Route path="/reserve/success/:id" element={<LegacySuccessRedirect />} />
 
         {/* Manage Existing Reservation */}
         <Route path="/reservations/manage/:shortId" element={<ManageReservationPage />} />

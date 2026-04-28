@@ -70,7 +70,7 @@ For local containerized testing or alternative hosting provider (e.g., AWS ECS, 
 -   **Free Tier Sleeping**: If using Render's free tier, the service will "sleep" after 15 minutes of inactivity. The first request after a sleep phase will have a high latency (30–60 seconds).
 -   **Stripe Webhooks**: When running locally, use the Stripe CLI to forward webhooks:
     ```bash
-    stripe listen --forward-to localhost:3000/api/webhooks/stripe
+    stripe listen --forward-to localhost:3000/webhooks/stripe
     ```
 
 ---

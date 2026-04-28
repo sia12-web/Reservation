@@ -1,6 +1,7 @@
 import Redis from "ioredis";
 import Redlock from "redlock";
 import { env } from "./env";
+import { logger } from "./logger";
 
 export const redis = new Redis(env.redisUrl, {
   lazyConnect: true,
@@ -8,7 +9,7 @@ export const redis = new Redis(env.redisUrl, {
 });
 
 redis.on("error", (err) => {
-  console.error("[ioredis] Main connection error:", err.message);
+  logger.error({ err: err.message }, "[ioredis] Main connection error");
 });
 
 const realRedlock = new Redlock([redis], {
@@ -20,7 +21,7 @@ const realRedlock = new Redlock([redis], {
 export const redlock = (env.nodeEnv === 'test' || process.env.USE_MOCK_REDIS === 'true')
   ? {
     acquire: async (resources: string[], _duration: number) => {
-      console.warn(`Using MOCK redlock acquisition (NODE_ENV=${env.nodeEnv}, USE_MOCK=${process.env.USE_MOCK_REDIS}) for:`, resources);
+      logger.warn({ resources }, `Using MOCK redlock (NODE_ENV=${env.nodeEnv})`);
       return {
         release: async () => {
           // no-op

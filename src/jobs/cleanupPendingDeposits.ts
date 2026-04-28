@@ -4,10 +4,11 @@ import { prisma } from "../config/prisma";
 import { stripe } from "../config/stripe";
 import { env } from "../config/env";
 import { refundReservationDeposit } from "../services/stripe";
+import { logger } from "../config/logger";
 
 const connection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
 connection.on("error", (err) => {
-  console.error("[ioredis] BullMQ connection error:", err.message);
+  logger.error({ err: err.message }, "[ioredis] BullMQ connection error");
 });
 
 export const cleanupQueue = new Queue("cleanup-pending-deposits", { connection });
@@ -43,8 +44,8 @@ export function startCleanupWorker(): Worker {
           if (payment.providerIntentId && !payment.providerIntentId.startsWith("pending_")) {
             try {
               await stripe.paymentIntents.cancel(payment.providerIntentId);
-            } catch {
-              // ignore Stripe cancel errors to avoid blocking cleanup
+            } catch (err) {
+              logger.warn({ err, intentId: payment.providerIntentId }, "Stripe cancel failed during cleanup (non-blocking)");
             }
           }
         }
@@ -70,6 +71,20 @@ export function startCleanupWorker(): Worker {
             },
           }),
         ]);
+
+        // Notify guest that their reservation was auto-cancelled due to unpaid deposit
+        if (reservation.clientEmail) {
+          const { sendCancellationEmail } = await import("../services/email");
+          await sendCancellationEmail({
+            to: reservation.clientEmail,
+            clientName: reservation.clientName,
+            partySize: reservation.partySize,
+            startTime: reservation.startTime,
+            shortId: reservation.shortId,
+            tableIds: [],
+            cancellationReason: "Your reservation was automatically cancelled because the security deposit was not completed within 15 minutes. Please rebook if you'd like to reserve again.",
+          }).catch(err => logger.error({ err, shortId: reservation.shortId }, "[Cleanup] Failed to send deposit expiry email"));
+        }
       }
 
       // --- Phase 2: Cleanup stale WAITLIST reservations (startTime passed by 2+ hours with no admin action) ---
@@ -131,9 +146,9 @@ export function startCleanupWorker(): Worker {
       for (const res of stuckRefunds) {
         try {
           await refundReservationDeposit(res.id, "Automated retry: refund failed during cancellation");
-          console.log(`[Cleanup] Retried refund for reservation ${res.shortId}`);
+          logger.info({ shortId: res.shortId }, "[Cleanup] Retried refund successfully");
         } catch (err) {
-          console.error(`[Cleanup] Refund retry failed for ${res.shortId}:`, err);
+          logger.error({ err, shortId: res.shortId }, "[Cleanup] Refund retry failed");
         }
       }
     },

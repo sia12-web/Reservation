@@ -31,7 +31,7 @@ router.post(
         res.cookie("admin_token", token, {
             httpOnly: true,
             secure: env.nodeEnv === "production",
-            sameSite: "lax",
+            sameSite: "strict",
             path: "/",
             maxAge: 24 * 60 * 60 * 1000, // 24 hours
         });

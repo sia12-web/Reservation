@@ -398,8 +398,6 @@ router.post(
     const { refundReservationDeposit } = await import("../services/stripe");
     await refundReservationDeposit(id);
 
-    await refundReservationDeposit(id);
-
     if (reservation.clientEmail) {
       const { sendCancellationEmail } = await import("../services/email");
       await sendCancellationEmail({
@@ -489,9 +487,8 @@ router.post(
 );
 
 export function deriveDepositState(partySize: number) {
-  // Use a threshold of 10 for now
   const depositThreshold = 10;
-  return partySize > depositThreshold
+  return partySize >= depositThreshold
     ? { status: "PENDING_DEPOSIT", depositStatus: "PENDING" }
     : { status: "CONFIRMED", depositStatus: "NOT_REQUIRED" };
 }

@@ -5,7 +5,7 @@ import { env } from "../config/env";
 import { alignToSlotInterval, calculateDurationMinutes, isWithinBusinessHours, getClosingTime, validateMinimumDuration } from "../utils/time";
 import { generateShortId } from "../utils/shortId";
 import { HttpError } from "../middleware/errorHandler";
-import { checkAvailability, checkBlackout } from "./availability";
+import { checkAvailability, checkBlackout, acquireTableLocks } from "./availability";
 import { findBestTableAssignment } from "./tableAssignment/engine";
 import { TableConfig } from "./tableAssignment/types";
 import { trySmartReassignment } from "./reassignment";
@@ -79,68 +79,86 @@ export async function createReservation(options: CreateReservationOptions) {
     throw new HttpError(400, durationError);
   }
 
-  // 2. Distributed Lock
-  const dateKey = startTime.toISOString().slice(0, 10);
-  const resource = `lock:reservation:${dateKey}`;
-  const lock = await redlock.acquire([resource], 35000); // 35s TTL (accounts for Stripe API + reassignment)
+  // 2. Compute table assignment (without lock — optimistic phase)
+  const blackoutReason = await checkBlackout(prisma, { startTime, endTime });
+  if (blackoutReason) throw new HttpError(409, blackoutReason);
+
+  const activeLayout = await prisma.layout.findFirst({
+    where: { isActive: true },
+    include: { tables: true },
+  });
+
+  if (!activeLayout) throw new HttpError(500, "Active layout is not configured");
+
+  const tableConfigs: TableConfig[] = activeLayout.tables.map((table) => ({
+    id: table.id,
+    type: (table.type as TableConfig["type"]) ?? "STANDARD",
+    minCapacity: table.minCapacity ?? 1,
+    maxCapacity: table.id === "T15" ? 999 : (table.maxCapacity ?? 4),
+    priorityScore: table.priorityScore ?? 0,
+  }));
+
+  const adjacency = (activeLayout.adjacencyGraph as Record<string, string[]>) ?? {};
+
+  let finalTableIds: string[] = [];
+  let moves: { reservationId: string; newTableIds: string[] }[] = [];
+  if (manualTableIds && manualTableIds.length > 0) {
+    const unavailable = await checkAvailability(prisma, { startTime, endTime });
+    const conflictIds = manualTableIds.filter(id => unavailable.includes(id));
+    if (conflictIds.length > 0) {
+       throw new HttpError(409, `Tables ${conflictIds.join(", ")} are no longer available`);
+    }
+    finalTableIds = manualTableIds;
+  } else {
+    const unavailable = await checkAvailability(prisma, { startTime, endTime });
+    const available = tableConfigs.map(t => t.id).filter(id => !unavailable.includes(id));
+
+    const assignment = findBestTableAssignment(partySize, available, { tables: tableConfigs, adjacency });
+
+    if (assignment.best && (partySize < 10 || assignment.best.score <= -1000)) {
+       finalTableIds = assignment.best.tableIds;
+    } else {
+       const reassignment = await trySmartReassignment(prisma, {
+           newPartySize: partySize,
+           startTime,
+           endTime,
+           layoutId: activeLayout.id,
+           allTables: tableConfigs,
+           adjacency,
+       });
+
+       if (reassignment.canReassign) {
+           finalTableIds = reassignment.assignment.tableIds;
+           moves = reassignment.moves;
+       } else if (assignment.best) {
+           finalTableIds = assignment.best.tableIds;
+       } else {
+           throw new HttpError(409, "No available tables found for the requested time");
+       }
+    }
+  }
+
+  // 3. Acquire fine-grained distributed locks for the specific tables + time buckets
+  // Collect ALL tables involved (assigned + tables being moved by reassignment)
+  const allInvolvedTableIds = [
+    ...finalTableIds,
+    ...moves.flatMap(m => m.newTableIds),
+  ];
+  const lock = await acquireTableLocks(redlock, {
+    tableIds: [...new Set(allInvolvedTableIds)],
+    startTime,
+    endTime,
+    ttlMs: 15000, // 15s TTL (sufficient for DB transaction + Stripe call)
+  });
 
   try {
-    const blackoutReason = await checkBlackout(prisma, { startTime, endTime });
-    if (blackoutReason) throw new HttpError(409, blackoutReason);
-
-    // 3. Setup Layout & Assignment
-    const activeLayout = await prisma.layout.findFirst({
-      where: { isActive: true },
-      include: { tables: true },
-    });
-
-    if (!activeLayout) throw new HttpError(500, "Active layout is not configured");
-
-    const tableConfigs: TableConfig[] = activeLayout.tables.map((table) => ({
-      id: table.id,
-      type: (table.type as TableConfig["type"]) ?? "STANDARD",
-      minCapacity: table.minCapacity ?? 1,
-      maxCapacity: table.id === "T15" ? 999 : (table.maxCapacity ?? 4),
-      priorityScore: table.priorityScore ?? 0,
-    }));
-
-    const adjacency = (activeLayout.adjacencyGraph as Record<string, string[]>) ?? {};
-
-    let finalTableIds: string[] = [];
-    let moves: { reservationId: string; newTableIds: string[] }[] = [];
-    if (manualTableIds && manualTableIds.length > 0) {
-      const unavailable = await checkAvailability(prisma, { startTime, endTime });
-      const conflictIds = manualTableIds.filter(id => unavailable.includes(id));
-      if (conflictIds.length > 0) {
-         throw new HttpError(409, `Tables ${conflictIds.join(", ")} are no longer available`);
-      }
-      finalTableIds = manualTableIds;
-    } else {
-      const unavailable = await checkAvailability(prisma, { startTime, endTime });
-      const available = tableConfigs.map(t => t.id).filter(id => !unavailable.includes(id));
-
-      const assignment = findBestTableAssignment(partySize, available, { tables: tableConfigs, adjacency });
-
-      if (assignment.best && (partySize < 10 || assignment.best.score <= -1000)) {
-         finalTableIds = assignment.best.tableIds;
-      } else {
-         const reassignment = await trySmartReassignment(prisma, {
-             newPartySize: partySize,
-             startTime,
-             endTime,
-             layoutId: activeLayout.id,
-             allTables: tableConfigs,
-             adjacency,
-         });
-
-         if (reassignment.canReassign) {
-             finalTableIds = reassignment.assignment.tableIds;
-             moves = reassignment.moves;
-         } else if (assignment.best) {
-             finalTableIds = assignment.best.tableIds;
-         } else {
-             throw new HttpError(409, "No available tables found for the requested time");
-         }
+    // Re-verify availability inside the lock to catch concurrent reservations
+    // that may have committed between our optimistic check and lock acquisition
+    if (!manualTableIds || manualTableIds.length === 0) {
+      const recheck = await checkAvailability(prisma, { startTime, endTime });
+      const conflicting = finalTableIds.filter(id => recheck.includes(id));
+      if (conflicting.length > 0) {
+        throw new HttpError(409, `Tables ${conflicting.join(", ")} were just booked. Please try again.`);
       }
     }
 

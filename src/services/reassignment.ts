@@ -115,7 +115,7 @@ export async function trySmartReassignment(
             // during the [startTime, endTime] window. Since there is an overlap between these windows,
             // we must not move resId into targetTableIds.
             // Fix #11: Also exclude tables already claimed by previous moves in this iteration.
-            const restrictedIds = new Set([...unavailableDuringFullStay, ...targetTableIds, ...claimedByMoves]);
+            const restrictedIds = new Set([...unavailableDuringFullStay, ...targetTableIds, ...claimedByMoves, "T15"]);
 
             const validPoolForThisMove = allTables
                 .map(t => t.id)
@@ -128,6 +128,15 @@ export async function trySmartReassignment(
             );
 
             if (moveResult.best) {
+                // CRITICAL: Never move an existing reservation to overflow (T15).
+                // First-come-first-served: if the only way to seat the new party
+                // is to push an existing guest to overflow, the NEW party should
+                // go to overflow instead.
+                if (moveResult.best.tableIds.includes("T15")) {
+                    allMoved = false;
+                    break;
+                }
+
                 moves.push({
                     reservationId: resId,
                     newTableIds: moveResult.best.tableIds,
