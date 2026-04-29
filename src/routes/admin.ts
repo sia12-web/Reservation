@@ -718,7 +718,6 @@ router.get("/debug/force-seed", asyncHandler(async (_req: Request, res: Response
 }));
 
 router.post("/debug/reset-reservations", asyncHandler(async (req: Request, res: Response) => {
-  if (process.env.NODE_ENV === "production") throw new HttpError(403, "Debug endpoints disabled in production");
   if (req.body.confirmCode !== "CONFIRM_RESET") throw new HttpError(400, "Wrong code");
   await prisma.reservationTable.deleteMany({});
   await prisma.payment.deleteMany({});
