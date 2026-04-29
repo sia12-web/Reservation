@@ -69,12 +69,12 @@ if (process.env.NODE_ENV === "production") {
     const frontendPath = path.join(__dirname, "../frontend/dist");
     app.use(express.static(frontendPath));
     // Serve admin app for any /admin* routes
-    app.get("/admin*splat", (_req, res) => {
+    app.get(["/admin", "/admin/*"], (_req, res) => {
         res.sendFile(path.join(frontendPath, "admin.html"));
     });
 
     // Serve client app for all other routes
-    app.get("*splat", (_req, res) => {
+    app.get("*", (_req, res) => {
         res.sendFile(path.join(frontendPath, "index.html"));
     });
 }
