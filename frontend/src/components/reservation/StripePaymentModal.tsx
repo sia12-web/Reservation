@@ -100,8 +100,8 @@ function CheckoutForm({
       <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl text-center">
          <p className="text-amber-800 font-semibold mb-1">Security Deposit Required</p>
          <p className="text-amber-700 text-sm">
-           A fully refundable deposit of <strong>${amount}</strong> is required to hold your table.
-           It will be freed once you finish your reservation.
+           A security deposit of <strong>${amount}</strong> is required to hold your table.
+           The deposit (minus a $2.00 processing fee) will be refunded once you finish your reservation.
          </p>
       </div>
 

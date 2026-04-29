@@ -28,10 +28,12 @@ export async function refundReservationDeposit(reservationId: string, reason?: s
         } else {
             await stripe.refunds.create({
                 payment_intent: payment.providerIntentId,
+                amount: 4800, // Refund $48.00 (keep $2.00 for Stripe fees)
                 reason: "requested_by_customer",
                 metadata: {
                    reason: reason || "Admin Cancellation",
-                   reservationId: reservationId
+                   reservationId: reservationId,
+                   feeDeducted: "200"
                 }
             });
             logger.info(`Stripe refund created for ${payment.providerIntentId}`);
