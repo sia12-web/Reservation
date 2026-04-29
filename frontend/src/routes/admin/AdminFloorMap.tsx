@@ -272,7 +272,7 @@ export default function AdminFloorMap() {
                                                 <div className="space-y-1">
                                                     <p className="text-sm font-black text-amber-900 leading-none uppercase tracking-tight">Security Deposit Active</p>
                                                     <p className="text-xs font-bold text-amber-700 leading-snug">
-                                                        Reservation <strong>#{activeRes.shortId}</strong> has a paid deposit. Freeing this table will mark it as <strong>complete</strong> (if checked in) or <strong>cancelled</strong> (if not), and <strong>automatically refund</strong> the deposit.
+                                                        Reservation <strong>#{activeRes.shortId}</strong> has a paid deposit. Freeing this table will mark it as <strong>complete</strong> (if checked in) or <strong>cancelled</strong> (if not), and <strong>automatically refund $48.00</strong> (keeping $2.00 for processing).
                                                         {activeRes.status !== 'CHECKED_IN' && <span className="block mt-1 font-black text-amber-900 underline decoration-amber-300">A cancellation email will be sent to the guest.</span>}
                                                     </p>
                                                 </div>

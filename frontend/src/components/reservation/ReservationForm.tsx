@@ -525,6 +525,7 @@ export default function ReservationForm({
             <p>3. <b>Property Damage & Costs</b>: By reserving, you agree to be held liable for any physical damage caused to the restaurant’s property, including but not limited to furniture, equipment, or decor. <b>In the event of damage, Diba Restaurant reserves the right to hold your security deposit for an investigation and to cover repair or replacement costs.</b></p>
             <p>4. <b>Conduct</b>: We reserve the right to refuse service or remove guests who are disruptive, intoxicated, or demonstrate behavior that compromises the safety or comfort of our staff and other diners.</p>
             <p>5. <b>Liability</b>: Diba Restaurant is not responsible for lost or stolen personal belongings left on the premises.</p>
+            <p>6. <b>Security Deposit & Fees</b>: For groups of 10 or more, a $50.00 security deposit is required to secure your reservation. In the event of a cancellation or refund, a <b>$2.00 non-refundable processing fee</b> will be deducted to cover transaction costs. The remaining $48.00 will be refunded to your original payment method.</p>
           </div>
 
           <label className="flex items-start gap-4 p-4 bg-white border border-slate-200 rounded-xl cursor-pointer hover:bg-blue-50 transition-colors select-none group">

@@ -188,7 +188,8 @@ export async function sendDepositRequestEmail(params: ReservationEmailParams) {
         <h1 style="color: #1e293b; margin-bottom: 24px; text-align: center;">Deposit Required</h1>
         <p style="color: #475569; font-size: 16px;">Hi <strong>${clientName}</strong>,</p>
         <p style="color: #475569; font-size: 16px;">Thank you for your reservation request for <strong>${partySize} guests</strong> on <strong>${dateStr}</strong>.</p>
-        <p style="color: #475569; font-size: 16px;">For parties larger than 10, we require a <strong>$50 security deposit</strong> to confirm the booking. This deposit will be credited toward your final bill.</p>
+        <p style="color: #475569; font-size: 16px; line-height: 1.6;">For parties of 10 or more, we require a <strong>$50.00 security deposit</strong> to confirm your booking. This deposit is fully credited toward your final bill at the restaurant.</p>
+        <p style="color: #475569; font-size: 15px; line-height: 1.6; font-style: italic;">Note: In the event of a cancellation or refund, a $2.00 non-refundable processing fee is deducted to cover transaction costs.</p>
         
         <div style="background-color: #fffbeb; padding: 24px; border: 1px solid #fef3c7; border-radius: 12px; margin: 24px 0; text-align: center;">
             <p style="color: #92400e; margin: 0 0 16px 0; font-weight: bold; font-size: 18px;">Your reservation is currently on HOLD.</p>
@@ -236,8 +237,9 @@ export async function sendCancellationEmail(params: ReservationEmailParams) {
         `}
 
         <p style="color: #475569; font-size: 16px; line-height: 1.6;">
-            <strong>We have automatically processed a full refund</strong> of your security deposit (if applicable). 
-            It should appear on your statement within a few business days (timing depends on your bank).
+            <strong>We have automatically processed a refund</strong> of your security deposit (if applicable). 
+            Please note that a <strong>$2.00 non-refundable processing fee</strong> has been deducted to cover transaction costs. 
+            The remaining amount should appear on your statement within a few business days.
         </p>
         
         <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 24px 0; text-align: center; border: 1px solid #e2e8f0;">
