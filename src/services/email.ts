@@ -232,11 +232,15 @@ export async function sendCancellationEmail(params: ReservationEmailParams) {
         
         ${isOverflow ? `
             <p style="color: #475569; font-size: 16px; line-height: 1.6;">We are writing to let you know that we were unfortunately unable to find a table for your party as the restaurant is completely at capacity for your selected date.</p>
-            <p style="color: #475569; font-size: 16px; line-height: 1.6;"><strong>We have automatically processed a full refund</strong> of your security deposit (if applicable). It should appear on your statement within a few business days (timing depends on your bank).</p>
         ` : `
             <p style="color: #475569; font-size: 16px; line-height: 1.6;">Your reservation <strong>#${shortId}</strong> has been cancelled.</p>
             ${cancellationReason ? `<p style="color: #475569; font-size: 16px;"><strong>Reason:</strong> ${cancellationReason}</p>` : ""}
         `}
+
+        <p style="color: #475569; font-size: 16px; line-height: 1.6;">
+            <strong>We have automatically processed a full refund</strong> of your security deposit (if applicable). 
+            It should appear on your statement within a few business days (timing depends on your bank).
+        </p>
         
         <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 24px 0; text-align: center; border: 1px solid #e2e8f0;">
             <p style="color: #475569; font-size: 14px; margin: 0;">We hope to have the chance to welcome you another time!</p>
