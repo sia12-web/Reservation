@@ -16,8 +16,6 @@ export default function ReservationSummary({ reservation }: ReservationSummaryPr
         ? "bg-amber-100 text-amber-800"
         : "bg-slate-200 text-slate-800";
 
-  // Filter out the virtual overflow table T15 from public view
-  const displayTableIds = reservation.tableIds?.filter(t => t !== "T15") || [];
 
   return (
     <div className="space-y-4">
