@@ -654,11 +654,15 @@ router.post(
 
     const reservation = activeTable.reservation;
     await prisma.$transaction(async (tx) => {
+      const effectiveEndTime = now > new Date(reservation.startTime) 
+        ? now 
+        : new Date(new Date(reservation.startTime).getTime() + 60000); // Start + 1 min
+
       await tx.reservation.update({
         where: { id: reservation.id },
         data: {
           status: "COMPLETED",
-          endTime: now,
+          endTime: effectiveEndTime,
           freedAt: now,
           completedAt: now,
           version: { increment: 1 },
