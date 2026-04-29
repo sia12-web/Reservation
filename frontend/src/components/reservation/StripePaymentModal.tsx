@@ -40,6 +40,7 @@ function CheckoutForm({
   const [error, setError] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [bypassing, setBypassing] = useState(false);
+  const [succeeded, setSucceeded] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,7 +57,10 @@ function CheckoutForm({
       setError(submitError.message ?? "An error occurred");
       setProcessing(false);
     } else {
-      onSuccess();
+      setSucceeded(true);
+      setTimeout(() => {
+        onSuccess();
+      }, 2000);
     }
   };
 
@@ -65,12 +69,31 @@ function CheckoutForm({
     setBypassing(true);
     try {
       await confirmDemoPayment(reservationId);
-      onSuccess();
+      setSucceeded(true);
+      setTimeout(() => {
+        onSuccess();
+      }, 1500);
     } catch (err: any) {
       setError("Demo bypass failed. Check backend logs.");
       setBypassing(false);
     }
   };
+
+  if (succeeded) {
+    return (
+      <div className="py-12 text-center space-y-6 animate-in fade-in zoom-in duration-500">
+        <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 mx-auto shadow-inner">
+          <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-3xl font-black text-slate-900">Payment Successful!</h2>
+          <p className="text-slate-600 font-medium">Your reservation is being confirmed...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
