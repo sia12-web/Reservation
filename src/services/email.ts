@@ -233,7 +233,6 @@ export async function sendCancellationEmail(params: ReservationEmailParams) {
             <p style="color: #475569; font-size: 16px; line-height: 1.6;">We are writing to let you know that we were unfortunately unable to find a table for your party as the restaurant is completely at capacity for your selected date.</p>
         ` : `
             <p style="color: #475569; font-size: 16px; line-height: 1.6;">Your reservation <strong>#${shortId}</strong> has been cancelled.</p>
-            ${cancellationReason ? `<p style="color: #475569; font-size: 16px;"><strong>Reason:</strong> ${cancellationReason}</p>` : ""}
         `}
 
         <p style="color: #475569; font-size: 16px; line-height: 1.6;">
