@@ -99,10 +99,10 @@ describe("POST /reservations", () => {
       }
     ]);
     
-    // Mock transaction to fail or return no tables (simulating a conflict or unavailability)
-    // In our actual implementation, the service throws if T15 is also not suitable or if explicitly mocked to fail
+    // Mock transaction to fail with a 409 Conflict (simulating a race condition or capacity limit)
     prismaMock.$transaction.mockImplementation(() => {
-        throw new Error("No available tables for party size 2");
+        const { HttpError } = require("../src/middleware/errorHandler");
+        throw new HttpError(409, "No available tables for party size 2");
     });
 
     const response = await request(app)

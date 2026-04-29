@@ -133,7 +133,11 @@ export async function createReservation(options: CreateReservationOptions) {
        } else if (assignment.best) {
            finalTableIds = assignment.best.tableIds;
        } else {
-           // No tables available even after reassignment — fall back to waitlist
+           // No tables available even after reassignment
+           // Only allow T15 (waitlist) for smaller parties; reject larger parties with 409
+           if (partySize >= 10) {
+             throw new HttpError(409, `No available tables for party size ${partySize} at this time.`);
+           }
            finalTableIds = ["T15"];
        }
     }
