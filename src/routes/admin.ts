@@ -550,6 +550,13 @@ router.get(
       endTime = parseSafeDate(query.to) || new Date(now.getTime() + 4 * 3600000);
     }
 
+    // Fix: Ensure startTime is always before endTime to prevent Postgres GIST range errors
+    if (startTime > endTime) {
+      const temp = startTime;
+      startTime = endTime;
+      endTime = temp;
+    }
+
     const layout = await prisma.layout.findFirst({
       where: { isActive: true },
       include: { tables: true },
