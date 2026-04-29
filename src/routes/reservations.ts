@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { stripe } from "../config/stripe";
+import { env } from "../config/env";
 import { asyncHandler } from "../utils/asyncHandler";
 import { calculateDurationMinutes, isWithinBusinessHours, getClosingTime, parseSafeDate, validateMinimumDuration } from "../utils/time";
 import { HttpError } from "../middleware/errorHandler";

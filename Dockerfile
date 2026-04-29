@@ -27,9 +27,6 @@ COPY src ./src/
 COPY frontend ./frontend/
 
 # Build TypeScript backend and React frontend
-ARG VITE_STRIPE_PUBLISHABLE_KEY
-ENV VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY
-
 RUN npm run build
 RUN cd frontend && npm run build
 
