@@ -220,7 +220,7 @@ export async function sendDepositRequestEmail(params: ReservationEmailParams) {
 
 
 export async function sendCancellationEmail(params: ReservationEmailParams) {
-    const { to, clientName, shortId, tableIds, cancellationReason } = params;
+    const { to, clientName, shortId, tableIds } = params;
     const isOverflow = tableIds.includes("T15");
 
     const html = `

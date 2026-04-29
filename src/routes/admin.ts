@@ -637,7 +637,8 @@ router.post(
   asyncHandler(async (req: Request, res: Response) => {
     const tableId = req.params.tableId as string;
     const { reason } = z.object({ reason: z.string().optional() }).parse(req.body);
-    const now = new Date();
+    let reservationIdToRefund: string | null = null;
+
     await prisma.$transaction(async (tx) => {
       // Fetch inside transaction to ensure we have the latest data
       const currentTable = await tx.reservationTable.findFirst({
@@ -648,6 +649,7 @@ router.post(
       if (!currentTable) throw new HttpError(409, "Table is no longer occupied");
       
       const reservation = currentTable.reservation;
+      reservationIdToRefund = reservation.id;
       const now = new Date();
 
       // Ensure endTime is strictly after startTime (at least 1 min)
@@ -682,7 +684,9 @@ router.post(
       });
     });
 
-    await refundReservationDeposit(reservation.id);
+    if (reservationIdToRefund) {
+      await refundReservationDeposit(reservationIdToRefund);
+    }
     res.json({ message: `Table ${tableId} freed` });
   })
 );
