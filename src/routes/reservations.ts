@@ -127,6 +127,7 @@ router.post(
       endTime: reservation.endTime,
       clientSecret,
       clientEmail: reservation.clientEmail,
+      stripePublishableKey: env.stripePublishableKey,
     });
   })
 );
@@ -336,6 +337,7 @@ router.get(
         reservationTables: reservation.reservationTables,
         clientSecret,
         customerNotes: reservation.customerNotes,
+        stripePublishableKey: env.stripePublishableKey,
     });
   })
 );

@@ -243,6 +243,7 @@ export default function ManageReservationPage() {
                     <StripePaymentModal 
                         clientSecret={reservation.clientSecret}
                         reservationId={reservation.id}
+                        publishableKey={reservation.stripePublishableKey}
                         onSuccess={() => {
                             setIsPaying(false);
                             refetch();

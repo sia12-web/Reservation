@@ -5,19 +5,12 @@ import {
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { confirmDemoPayment } from "../../api/reservations.api";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertTriangle } from "lucide-react";
 
 // Get key from env
-const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "";
-if (!publishableKey && typeof window !== 'undefined') {
-  console.error("❌ Stripe Publishable Key is missing in frontend!");
-} else {
-  console.log("✅ Stripe Publishable Key found (starts with):", publishableKey.substring(0, 7));
-}
-
-const stripePromise = loadStripe(publishableKey);
+const defaultPublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "";
 
 interface StripePaymentModalProps {
   clientSecret: string;
@@ -26,6 +19,7 @@ interface StripePaymentModalProps {
   onCancel: () => void;
   amount?: number;
   cancelLabel?: string;
+  publishableKey?: string; // New prop for dynamic key
 }
 
 function CheckoutForm({ 
@@ -129,21 +123,51 @@ export default function StripePaymentModal({
   onSuccess,
   onCancel,
   amount,
-  cancelLabel
+  cancelLabel,
+  publishableKey
 }: StripePaymentModalProps) {
+  // Use provided key or fall back to env
+  const key = publishableKey || defaultPublishableKey;
+  
+  // Memoize stripePromise so we don't recreate it on every render
+  const stripePromise = useMemo(() => {
+    if (!key) {
+        console.error("❌ Stripe Publishable Key is missing!");
+        return null;
+    }
+    console.log("✅ Initializing Stripe with key (starts with):", key.substring(0, 7));
+    return loadStripe(key);
+  }, [key]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm">
       <div className="bg-white rounded-3xl p-8 max-w-xl w-full shadow-2xl animate-in fade-in zoom-in duration-300">
-        <Elements stripe={stripePromise} options={{ clientSecret }}>
-          <CheckoutForm 
-            onSuccess={onSuccess} 
-            onCancel={onCancel} 
-            amount={amount} 
-            cancelLabel={cancelLabel} 
-            reservationId={reservationId}
-          />
-        </Elements>
+        {stripePromise ? (
+            <Elements stripe={stripePromise} options={{ clientSecret }}>
+              <CheckoutForm 
+                onSuccess={onSuccess} 
+                onCancel={onCancel} 
+                amount={amount} 
+                cancelLabel={cancelLabel} 
+                reservationId={reservationId}
+              />
+            </Elements>
+        ) : (
+            <div className="p-8 text-center space-y-4">
+                <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center text-red-600 mx-auto">
+                    <AlertTriangle className="w-8 h-8" />
+                </div>
+                <p className="text-red-600 font-bold">Stripe configuration missing.</p>
+                <button 
+                    onClick={onCancel}
+                    className="w-full h-12 bg-slate-100 rounded-xl font-bold"
+                >
+                    Back
+                </button>
+            </div>
+        )}
       </div>
     </div>
   );
 }
+

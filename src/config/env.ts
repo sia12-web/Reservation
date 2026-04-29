@@ -35,5 +35,6 @@ export const env = {
   maxBookingDays: Number(process.env.MAX_BOOKING_DAYS ?? "60"),
   allowedOrigins: (process.env.ALLOWED_ORIGINS ?? "http://localhost:5173").split(",").map(o => o.trim()),
   jwtSecret: requireInProduction(process.env.JWT_SECRET, "JWT_SECRET"),
+  stripePublishableKey: process.env.VITE_STRIPE_PUBLISHABLE_KEY ?? process.env.STRIPE_PUBLISHABLE_KEY ?? "",
   reviewLink: process.env.REVIEW_LINK ?? "https://www.bing.com/search?pglt=299&q=diba+restaurant&cvid=514257cdd16e4f66834fa475b9171628&gs_lcrp=EgRlZGdlKgYIAhBFGDsyCQgAEEUYPBj5BzIGCAEQRRg5MgYIAhBFGDsyBggDEEUYOzIGCAQQRRg7MgYIBRBFGEEyBggGEEUYPNIBCDI0MDRqMGoxqAIIsAIB&form=EX0050&pc=U531&filters=local_ypid:\"YN6CE6D9BA91131947\"&shtp=GetUrl&shid=ffd7fbc4-7ebe-41f3-9918-01e3b52b0511&shtk=RGliYSBSZXN0YXVyYW50&shdk=V2VsY29tZSB0byBEaWJhIFJlc3RhdXJhbnQsIHdoZXJlIHRoZSB2aWJyYW50IGFuZCByaWNoIGZsYXZvcnMgb2YgUGVyc2lhbiBjdWlzaW5lIGNvbWUgdG8gbGlmZS4gTG9jYXRlZCBpbiB0aGUg4oCm&shhk=5ueLirCqD7Q%2B%2BBtabe4gBHZws1mh7XlQX46LfMtt%2Bm8%3D",
 };

@@ -17,6 +17,7 @@ export type ReservationResponse = {
   tableIds?: string[]; // Unified: creation response uses this
   reservationTables?: { tableId: string }[];
   clientSecret?: string | null;
+  stripePublishableKey?: string;
 };
 
 export async function createReservation(payload: ReservationRequest): Promise<ReservationResponse> {
