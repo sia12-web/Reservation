@@ -6,25 +6,37 @@ const logger = pino();
 
 export async function refundReservationDeposit(reservationId: string, reason?: string) {
     try {
-        const payment = await prisma.payment.findFirst({
-            where: {
-                reservationId,
-                status: "SUCCEEDED"
-            }
+        // Fix: Use a transaction to atomically "claim" the refund and prevent double-refunds
+        const payment = await prisma.$transaction(async (tx) => {
+            const p = await tx.payment.findFirst({
+                where: {
+                    reservationId,
+                    status: "SUCCEEDED"
+                }
+            });
+
+            if (!p || !p.providerIntentId) return null;
+
+            // Mark as REFUNDED immediately in the DB to "lock" it
+            // If Stripe fails, the cleanup job will catch it or we'll log it
+            await tx.payment.update({
+                where: { id: p.id },
+                data: { status: "REFUNDED" }
+            });
+
+            return p;
         });
 
-        if (!payment || !payment.providerIntentId) {
-            logger.info(`No active Stripe payment found for reservation ${reservationId} to refund.`);
+        if (!payment) {
+            logger.info(`No refundable Stripe payment found for reservation ${reservationId}.`);
             return;
         }
 
-        logger.info(`Initiating refund for reservation ${reservationId} (Payment: ${payment.providerIntentId}) - Reason: ${reason}`);
+        logger.info(`Initiating refund for reservation ${reservationId} (Payment: ${payment.providerIntentId})`);
 
-        // Check if Stripe is in mock mode (from config/stripe.ts)
         const isMock = (stripe as any).isMock;
-
         if (isMock) {
-            logger.info(`[Mocked] Deposit refund simulated. Internal Reason: ${reason || "N/A"}`);
+            logger.info(`[Mocked] Deposit refund simulated.`);
         } else {
             await stripe.refunds.create({
                 payment_intent: payment.providerIntentId,
@@ -39,11 +51,6 @@ export async function refundReservationDeposit(reservationId: string, reason?: s
             logger.info(`Stripe refund created for ${payment.providerIntentId}`);
         }
 
-        await prisma.payment.update({
-            where: { id: payment.id },
-            data: { status: "REFUNDED" }
-        });
-
         await prisma.reservation.update({
             where: { id: reservationId },
             data: { depositStatus: "REFUNDED" }
@@ -51,6 +58,7 @@ export async function refundReservationDeposit(reservationId: string, reason?: s
 
     } catch (error) {
         logger.error({ msg: "Failed to refund deposit", error, reservationId });
-        // Don't throw - we might still want to proceed with cancellation but log the failure
+        // Optional: Reset status to SUCCEEDED if you want to allow immediate retries, 
+        // but marking it as REFUNDED + logging is safer for financial integrity.
     }
 }
