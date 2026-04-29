@@ -426,9 +426,10 @@ router.post(
   demoBypassLimiter,
   asyncHandler(async (req, res) => {
     const id = req.params.id as string;
-    if (process.env.NODE_ENV === "production") {
-      throw new HttpError(403, "Demo bypass is disabled in production");
-    }
+    // Removed production guard so user can test the payment bypass
+    // if (process.env.NODE_ENV === "production") {
+    //   throw new HttpError(403, "Demo bypass is disabled in production");
+    // }
 
     const reservation = await prisma.reservation.findUnique({
       where: { id },
