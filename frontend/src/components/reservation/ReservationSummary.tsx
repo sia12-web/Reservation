@@ -30,12 +30,6 @@ export default function ReservationSummary({ reservation }: ReservationSummaryPr
           {status}
         </span>
       </div>
-      {displayTableIds.length > 0 && (
-        <div>
-          <p className="text-sm text-slate-500">Tables</p>
-          <p className="text-lg font-medium">{displayTableIds.join(", ")}</p>
-        </div>
-      )}
       {reservation.startTime && reservation.endTime && (
         <div>
           <p className="text-sm text-slate-500">Time</p>

@@ -62,7 +62,6 @@ export async function sendReservationConfirmation(params: ReservationEmailParams
                 <li style="margin-bottom: 12px;"><strong>📅 Date:</strong> ${dateStr}</li>
                 <li style="margin-bottom: 12px;"><strong>👥 Party Size:</strong> ${partySize} guests</li>
                 <li style="margin-bottom: 12px;"><strong>🆔 Confirmation:</strong> <span style="font-family: monospace; background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${shortId}</span></li>
-                ${tableIds.filter(id => id !== 'T15').length > 0 ? `<li style="margin-bottom: 12px;"><strong>🍽️ Tables:</strong> ${tableIds.filter(id => id !== 'T15').join(", ")}</li>` : ""}
                 ${isWaitlist ? `<li style="margin-bottom: 12px; color: #b45309;"><strong>⚠️ Status:</strong> Awaiting Final Table Assignment</li>` : ""}
             </ul>
         </div>
