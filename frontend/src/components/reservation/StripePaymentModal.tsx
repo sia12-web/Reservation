@@ -141,7 +141,7 @@ export default function StripePaymentModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl p-8 max-w-xl w-full shadow-2xl animate-in fade-in zoom-in duration-300">
+      <div className="bg-white rounded-3xl p-8 max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-in fade-in zoom-in duration-300 custom-scrollbar">
         {stripePromise ? (
             <Elements stripe={stripePromise} options={{ clientSecret }}>
               <CheckoutForm 
