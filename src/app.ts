@@ -42,7 +42,16 @@ const globalLimiter = rateLimit({
     },
 });
 
-app.use(helmet());
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+            "script-src": ["'self'", "https://js.stripe.com"],
+            "frame-src": ["'self'", "https://js.stripe.com"],
+            "connect-src": ["'self'", "https://api.stripe.com"],
+        },
+    },
+}));
 app.get("/favicon.ico", (_req, res) => res.status(204).end());
 app.use(globalLimiter);
 app.use(cors({
