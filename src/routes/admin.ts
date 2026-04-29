@@ -638,25 +638,22 @@ router.post(
     const tableId = req.params.tableId as string;
     const { reason } = z.object({ reason: z.string().optional() }).parse(req.body);
     const now = new Date();
-
-    const activeTable = await prisma.reservationTable.findFirst({
-      where: {
-        tableId,
-        reservation: {
-          status: { in: ["CONFIRMED", "CHECKED_IN", "PENDING_DEPOSIT", "HOLD"] },
-        },
-      },
-      include: { reservation: true },
-      orderBy: { reservation: { startTime: "asc" } }
-    });
-
-    if (!activeTable) throw new HttpError(409, "Table is not occupied");
-
-    const reservation = activeTable.reservation;
     await prisma.$transaction(async (tx) => {
-      const effectiveEndTime = now > new Date(reservation.startTime) 
-        ? now 
-        : new Date(new Date(reservation.startTime).getTime() + 60000); // Start + 1 min
+      // Fetch inside transaction to ensure we have the latest data
+      const currentTable = await tx.reservationTable.findFirst({
+        where: { tableId, reservation: { status: { in: ["CONFIRMED", "CHECKED_IN", "PENDING_DEPOSIT", "HOLD"] } } },
+        include: { reservation: true }
+      });
+
+      if (!currentTable) throw new HttpError(409, "Table is no longer occupied");
+      
+      const reservation = currentTable.reservation;
+      const now = new Date();
+
+      // Ensure endTime is strictly after startTime (at least 1 min)
+      const effectiveEndTime = now.getTime() > reservation.startTime.getTime()
+        ? now
+        : new Date(reservation.startTime.getTime() + 60000);
 
       await tx.reservation.update({
         where: { id: reservation.id },
@@ -668,15 +665,18 @@ router.post(
           version: { increment: 1 },
         },
       });
-      // Fix #14: Delete reservation table records to maintain data hygiene
+
       await tx.reservationTable.deleteMany({
         where: { reservationId: reservation.id },
       });
+
       await tx.auditLog.create({
         data: {
-          reservationId: reservation.id, tableId, action: "TABLE_FREED",
+          reservationId: reservation.id, 
+          tableId, 
+          action: "TABLE_FREED",
           before: maskPII({ status: reservation.status, endTime: reservation.endTime, reservation }) as Prisma.JsonObject,
-          after: { status: "COMPLETED", endTime: now.toISOString() } as Prisma.JsonObject,
+          after: { status: "COMPLETED", endTime: effectiveEndTime.toISOString() } as Prisma.JsonObject,
           reason: reason || "Admin freed table",
         },
       });
