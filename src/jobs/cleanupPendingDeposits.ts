@@ -6,9 +6,22 @@ import { env } from "../config/env";
 import { refundReservationDeposit } from "../services/stripe";
 import { logger } from "../config/logger";
 
-const connection = new IORedis(env.redisUrl, { maxRetriesPerRequest: null });
+const connection = new IORedis(env.redisUrl, { 
+  maxRetriesPerRequest: null,
+  lazyConnect: true,
+  retryStrategy(times) {
+    // Retry DNS/connection issues with backoff
+    return Math.min(times * 100, 5000);
+  }
+});
+
 connection.on("error", (err) => {
-  logger.error({ err: err.message }, "[ioredis] BullMQ connection error");
+  // Only log DNS errors as warnings during retry phase to avoid log noise
+  if (err.message.includes("EAI_AGAIN")) {
+    logger.warn({ err: err.message }, "[ioredis] BullMQ DNS lookup pending (retrying...)");
+  } else {
+    logger.error({ err: err.message }, "[ioredis] BullMQ connection error");
+  }
 });
 
 export const cleanupQueue = new Queue("cleanup-pending-deposits", { connection });
