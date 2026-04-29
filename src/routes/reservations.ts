@@ -126,6 +126,7 @@ router.post(
       startTime: reservation.startTime,
       endTime: reservation.endTime,
       clientSecret,
+      clientEmail: reservation.clientEmail,
     });
   })
 );

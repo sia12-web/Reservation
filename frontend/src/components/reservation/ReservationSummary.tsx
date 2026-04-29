@@ -16,6 +16,9 @@ export default function ReservationSummary({ reservation }: ReservationSummaryPr
         ? "bg-amber-100 text-amber-800"
         : "bg-slate-200 text-slate-800";
 
+  // Filter out the virtual overflow table T15 from public view
+  const displayTableIds = reservation.tableIds?.filter(t => t !== "T15") || [];
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -27,10 +30,10 @@ export default function ReservationSummary({ reservation }: ReservationSummaryPr
           {status}
         </span>
       </div>
-      {reservation.tableIds && reservation.tableIds.length > 0 && (
+      {displayTableIds.length > 0 && (
         <div>
           <p className="text-sm text-slate-500">Tables</p>
-          <p className="text-lg font-medium">{reservation.tableIds.join(", ")}</p>
+          <p className="text-lg font-medium">{displayTableIds.join(", ")}</p>
         </div>
       )}
       {reservation.startTime && reservation.endTime && (
@@ -41,11 +44,13 @@ export default function ReservationSummary({ reservation }: ReservationSummaryPr
           </p>
         </div>
       )}
-      <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-lg">
-        <p className="text-blue-800 text-sm font-medium">
-          ✉️ We have sent your reservation confirmation to your email.
-        </p>
-      </div>
+      {reservation.clientEmail ? (
+        <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-lg">
+          <p className="text-blue-800 text-sm font-medium">
+            ✉️ We have sent your reservation confirmation to your email.
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }
