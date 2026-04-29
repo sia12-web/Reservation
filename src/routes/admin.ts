@@ -643,7 +643,7 @@ router.post(
       // Fetch inside transaction to ensure we have the latest data
       const currentTable = await tx.reservationTable.findFirst({
         where: { tableId, reservation: { status: { in: ["CONFIRMED", "CHECKED_IN", "PENDING_DEPOSIT", "HOLD"] } } },
-        include: { reservation: true }
+        include: { reservation: { include: { reservationTables: true } } }
       });
 
       if (!currentTable) throw new HttpError(409, "Table is no longer occupied");
@@ -657,10 +657,13 @@ router.post(
         ? now
         : new Date(reservation.startTime.getTime() + 60000);
 
+      const isActuallyCancelled = reservation.status !== "CHECKED_IN";
+      const finalStatus = isActuallyCancelled ? "CANCELLED" : "COMPLETED";
+
       await tx.reservation.update({
         where: { id: reservation.id },
         data: {
-          status: "COMPLETED",
+          status: finalStatus,
           endTime: effectiveEndTime,
           freedAt: now,
           completedAt: now,
@@ -678,13 +681,32 @@ router.post(
           tableId, 
           action: "TABLE_FREED",
           before: maskPII({ status: reservation.status, endTime: reservation.endTime, reservation }) as Prisma.JsonObject,
-          after: { status: "COMPLETED", endTime: effectiveEndTime.toISOString() } as Prisma.JsonObject,
-          reason: reason || "Admin freed table",
+          after: { status: finalStatus, endTime: effectiveEndTime.toISOString() } as Prisma.JsonObject,
+          reason: reason || (isActuallyCancelled ? "Admin cancelled via free table" : "Admin freed table"),
         },
       });
     });
 
     if (reservationIdToRefund) {
+      // Re-fetch to get the latest status and tables for the email
+      const res = await prisma.reservation.findUnique({
+          where: { id: reservationIdToRefund },
+          include: { reservationTables: true }
+      });
+
+      if (res && res.status === "CANCELLED" && res.clientEmail) {
+          await sendCancellationEmail({
+              to: res.clientEmail,
+              clientName: res.clientName,
+              partySize: res.partySize,
+              startTime: res.startTime,
+              shortId: res.shortId,
+              tableIds: res.reservationTables.map(rt => rt.tableId),
+              isOverflow: res.reservationTables.some(rt => rt.tableId === 'T15'),
+              cancellationReason: reason || "Table freed by admin (No-show or early cancellation)"
+          }).catch(err => logger.error("Cancellation email failed", err));
+      }
+
       await refundReservationDeposit(reservationIdToRefund);
     }
     res.json({ message: `Table ${tableId} freed` });
