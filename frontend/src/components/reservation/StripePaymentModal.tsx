@@ -10,7 +10,14 @@ import { confirmDemoPayment } from "../../api/reservations.api";
 import { Loader2 } from "lucide-react";
 
 // Get key from env
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "");
+const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "";
+if (!publishableKey && typeof window !== 'undefined') {
+  console.error("❌ Stripe Publishable Key is missing in frontend!");
+} else {
+  console.log("✅ Stripe Publishable Key found (starts with):", publishableKey.substring(0, 7));
+}
+
+const stripePromise = loadStripe(publishableKey);
 
 interface StripePaymentModalProps {
   clientSecret: string;
