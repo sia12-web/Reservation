@@ -1,4 +1,4 @@
-import { env } from "./env";
+
 
 export const transporter = {
     sendMail: async (params: { from: string, to: string, cc?: string, subject: string, html: string }) => {
