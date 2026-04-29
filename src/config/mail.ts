@@ -6,10 +6,10 @@ const auth = env.smtpUser && env.smtpPass ? {
     pass: env.smtpPass,
 } : undefined;
 
-// Allow explicit SMTP_SECURE override, otherwise default based on NODE_ENV
+// Allow explicit SMTP_SECURE override, otherwise default based on port (465 = true, 587 = false)
 const secure = process.env.SMTP_SECURE !== undefined
     ? process.env.SMTP_SECURE === "true"
-    : env.nodeEnv === "production";
+    : env.smtpPort === 465;
 
 export const transporter = nodemailer.createTransport({
     host: env.smtpHost,
