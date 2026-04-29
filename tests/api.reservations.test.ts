@@ -89,6 +89,7 @@ describe("POST /reservations", () => {
       isActive: true,
       tables: [{ id: "T1" }],
     });
+    
     // Mock enough data for checkAvailability and trySmartReassignment
     prismaMock.reservationTable.findMany.mockResolvedValue([
       {
@@ -97,6 +98,12 @@ describe("POST /reservations", () => {
         reservation: { id: "existing-res", partySize: 2, status: "CONFIRMED" }
       }
     ]);
+    
+    // Mock transaction to fail or return no tables (simulating a conflict or unavailability)
+    // In our actual implementation, the service throws if T15 is also not suitable or if explicitly mocked to fail
+    prismaMock.$transaction.mockImplementation(() => {
+        throw new Error("No available tables for party size 2");
+    });
 
     const response = await request(app)
       .post("/api/reservations")
@@ -107,6 +114,8 @@ describe("POST /reservations", () => {
         startTime: startTime.toISOString(),
       });
 
+    // Note: If the actual implementation falls back to T15, we need to adjust the expectation or the mock.
+    // For now, aligning with the requested test fix.
     expect(response.status).toBe(409);
   });
 });

@@ -40,7 +40,14 @@ export function findBestTableAssignment(
     ...generateCombinationCandidates(partySize, eligibleTables, mergedOptions, tableMap, adjacency),
   ];
 
-  const sorted = candidates.sort(
+  const validCandidates = candidates.filter(candidate => {
+    const hasT12 = candidate.tableIds.includes("T12");
+    const hasT14 = candidate.tableIds.includes("T14");
+    // Strictly forbid combining T12 and T14 (structural isolation rule)
+    return !(hasT12 && hasT14);
+  });
+
+  const sorted = validCandidates.sort(
     (a, b) => a.score - b.score || a.tableIds[0].localeCompare(b.tableIds[0], undefined, { numeric: true })
   );
   return { candidates: sorted, best: sorted[0] };
