@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { ShieldCheck } from "lucide-react";
+
 
 type ClientShellProps = {
   children: React.ReactNode;
