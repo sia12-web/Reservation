@@ -37,7 +37,7 @@ Copy these into Railway's **Variables** tab for the **Web Service**.
 
 | Variable | Value | Where to Get It |
 |:---|:---|:---|
-| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` | Railway auto-fills if you link the Postgres service. Or paste your Supabase URL. |
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` | Railway auto-fills if you link the Postgres service. If using Supabase, **MUST** use the Transaction Pooler URL (aws-0-[region].pooler.supabase.com:6543) with `?pgbouncer=true`. Direct IPv6 connections (`db.*.supabase.co:5432`) will crash with P1001. |
 | `REDIS_URL` | `${{Redis.REDIS_URL}}` | Railway auto-fills if you link the Redis service. |
 | `STRIPE_SECRET_KEY` | `sk_live_...` | [Stripe Dashboard → API Keys](https://dashboard.stripe.com/apikeys) |
 | `STRIPE_WEBHOOK_SECRET` | `whsec_...` | Stripe Dashboard → Webhooks (create endpoint first, see Step 4) |
@@ -174,7 +174,7 @@ Here's every variable in one block. Replace the `<PLACEHOLDER>` values:
 
 ```env
 # --- CORE ---
-DATABASE_URL=<RAILWAY_POSTGRES_URL_OR_SUPABASE_URL>
+DATABASE_URL="postgresql://postgres.[YOUR_PROJECT_REF]:[YOUR_SUPABASE_PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres?pgbouncer=true"
 REDIS_URL=<RAILWAY_REDIS_URL>
 NODE_ENV=production
 
