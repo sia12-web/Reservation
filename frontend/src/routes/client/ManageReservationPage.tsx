@@ -15,7 +15,7 @@ import {
     ArrowRight,
     CreditCard
 } from "lucide-react";
-// import StripePaymentModal from "../../components/reservation/StripePaymentModal"; // Disabled for demo
+import StripePaymentModal from "../../components/reservation/StripePaymentModal";
 import { toRestaurantTime, getRestaurantNow } from "../../utils/time";
 
 import clsx from "clsx";
@@ -23,7 +23,7 @@ import clsx from "clsx";
 export default function ManageReservationPage() {
     const { shortId } = useParams<{ shortId: string }>();
     const [isConfirmingCancel, setIsConfirmingCancel] = useState(false);
-    // const [isPaying, setIsPaying] = useState(false); // Not needed for demo bypass
+    const [isPaying, setIsPaying] = useState(false);
 
     const { data: reservation, isLoading, error, refetch } = useQuery({
         queryKey: ["reservation", shortId],
@@ -112,14 +112,7 @@ export default function ManageReservationPage() {
                             <p className="text-amber-700 font-medium">A $50 deposit is needed to confirm your large party reservation.</p>
                         </div>
                         <button
-                            onClick={() => {
-                                console.log("Button clicked!", { id: reservation.id, isPending: demoPaymentMutation.isPending });
-                                if (!reservation.id) {
-                                    alert("❌ Error: Reservation ID is missing!");
-                                    return;
-                                }
-                                demoPaymentMutation.mutate(reservation.id);
-                            }}
+                            onClick={() => setIsPaying(true)}
                             disabled={demoPaymentMutation.isPending}
                             className="w-full md:w-auto px-8 py-4 bg-amber-600 text-white rounded-2xl font-black hover:bg-amber-700 transition-all shadow-lg shadow-amber-200 uppercase tracking-wider text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                         >
@@ -216,7 +209,7 @@ export default function ManageReservationPage() {
                 {/* Cancel Confirmation Modal/Overlay */}
                 {isConfirmingCancel && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-slate-900/60 backdrop-blur-sm">
-                        <div className="bg-white rounded-3xl p-8 max-w-sm w-full space-y-6 shadow-2xl animate-in fade-in zoom-in duration-200">
+                        <div className="bg-white rounded-3xl p-8 max-sm w-full space-y-6 shadow-2xl animate-in fade-in zoom-in duration-200">
                             <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-red-600 mx-auto">
                                 <AlertTriangle className="w-10 h-10" />
                             </div>
@@ -244,9 +237,23 @@ export default function ManageReservationPage() {
                         </div>
                     </div>
                 )}
-                {/* Stripe Payment Modal - Disabled for Demo */}
-                {/* Demo mode uses instant confirmation instead of Stripe */}
+
+                {/* Stripe Payment Modal */}
+                {isPaying && reservation.clientSecret && (
+                    <StripePaymentModal 
+                        clientSecret={reservation.clientSecret}
+                        reservationId={reservation.id}
+                        onSuccess={() => {
+                            setIsPaying(false);
+                            refetch();
+                        }}
+                        onCancel={() => setIsPaying(false)}
+                        amount={50}
+                        cancelLabel="Back to Details"
+                    />
+                )}
             </div>
         </ClientShell>
     );
 }
+
