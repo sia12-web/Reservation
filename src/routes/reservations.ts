@@ -129,6 +129,7 @@ router.post(
       endTime: reservation.endTime,
       clientSecret,
       clientEmail: reservation.clientEmail,
+      clientPhone: reservation.clientPhone,
       stripePublishableKey: env.stripePublishableKey,
     });
   })
