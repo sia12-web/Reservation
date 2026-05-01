@@ -155,23 +155,23 @@ function CheckoutForm({
         >
           {processing ? "Processing..." : `Pay $${amount} Deposit`}
         </button>
-        {reservationId && (
+        {reservationId && import.meta.env.DEV && (
           <button
             type="button"
             onClick={handleDemoBypass}
             disabled={processing || bypassing}
             className="h-12 w-full rounded-xl bg-emerald-100 text-emerald-700 font-bold border-2 border-emerald-200 hover:bg-emerald-200 transition-all flex items-center justify-center gap-2"
           >
-            {bypassing ? <Loader2 className="w-5 h-5 animate-spin" /> : "Demo Bypass (Mark as Paid)"}
+            {bypassing ? <Loader2 className="w-5 h-5 animate-spin" /> : "🧪 Demo Bypass (Dev Only)"}
           </button>
         )}
         <button
           type="button"
           onClick={onCancel}
           disabled={processing}
-          className="h-12 w-full rounded-xl bg-slate-100 text-slate-700 font-medium hover:bg-slate-200 transition-all"
+          className="h-12 w-full rounded-xl bg-red-100 text-red-700 font-semibold hover:bg-red-200 transition-all border-2 border-red-200"
         >
-          {cancelLabel}
+          {cancelLabel || "Cancel Reservation"}
         </button>
       </div>
     </form>

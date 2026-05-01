@@ -2,6 +2,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import ReservationForm from "../../components/reservation/ReservationForm";
 import StripePaymentModal from "../../components/reservation/StripePaymentModal";
+import { cancelReservation } from "../../api/reservations.api";
 import type { ReservationDraft } from "../../components/reservation/ReservationForm";
 import type { ReservationResponse } from "../../api/reservations.api";
 import ClientShell from "../../app/layout/ClientShell";
@@ -46,17 +47,27 @@ export default function NewReservationPage() {
     }
   };
 
-  const handlePaymentCancel = () => {
-    // User cancelled payment - show warning
-    setShowPaymentModal(false);
-    alert("⚠️ Payment Required!\n\nYour reservation will be automatically cancelled in 5 minutes if payment is not completed.\n\nPlease call us at (514) 485-9999 to complete your reservation.");
+  const handlePaymentCancel = async () => {
+    if (!pendingReservation) return;
 
-    // Navigate to success page showing PENDING_DEPOSIT warning
-    if (pendingReservation) {
-      navigate(`/reservations/${pendingReservation.reservationId}/success`, {
-        state: { reservation: pendingReservation },
-        replace: true,
-      });
+    setShowPaymentModal(false);
+
+    // Immediately cancel the reservation
+    try {
+      await cancelReservation(
+        pendingReservation.shortId,
+        "Customer cancelled payment",
+        pendingReservation.clientPhone
+      );
+
+      alert("❌ Reservation Cancelled\n\nYour reservation has been cancelled. The table is now available for others.\n\nIf you'd like to make a new reservation, please start over.");
+
+      // Go back to home/booking page
+      navigate("/", { replace: true });
+    } catch (error) {
+      console.error("Failed to cancel reservation:", error);
+      alert("⚠️ Error\n\nCould not cancel reservation. Please contact the restaurant at (514) 485-9999.");
+      navigate("/", { replace: true });
     }
   };
 
@@ -77,6 +88,7 @@ export default function NewReservationPage() {
           reservationId={pendingReservation.reservationId}
           amount={50}
           publishableKey={pendingReservation.stripePublishableKey}
+          cancelLabel="Cancel Reservation"
           onSuccess={handlePaymentSuccess}
           onCancel={handlePaymentCancel}
         />
