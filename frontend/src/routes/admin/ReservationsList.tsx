@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchAdminReservations, cancelReservation, createReservation, resetReservations } from "../../api/admin.api";
+import { fetchAdminReservations, cancelReservation, createReservation } from "../../api/admin.api";
 import type { ReservationAdmin } from "../../api/admin.api";
 import dayjs from "dayjs";
 import { parseInRestaurantTime, toUtcIso, toRestaurantTime, getRestaurantNow } from "../../utils/time";
 
 
-import { Search as SearchIcon, Phone, Users, CalendarDays, Printer, Trash2, TriangleAlert, Clock, ArrowUpRight } from "lucide-react";
+import { Search as SearchIcon, Phone, Users, CalendarDays, Printer, TriangleAlert, Clock, ArrowUpRight } from "lucide-react";
 import { clsx } from "clsx";
 import { Link } from "react-router-dom";
 
@@ -17,9 +17,6 @@ export default function ReservationsList() {
     const [filterDate, setFilterDate] = useState(getRestaurantNow().format("YYYY-MM-DD"));
 
     const [viewMode, setViewMode] = useState<'day' | 'upcoming'>('day');
-
-    // Reset modal state
-    const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
     // Cancel modal state
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
@@ -36,15 +33,6 @@ export default function ReservationsList() {
 
         time: "19:00",
         internalNotes: ""
-    });
-
-    const resetMutation = useMutation({
-        mutationFn: () => resetReservations(),
-        onSuccess: (data) => {
-            queryClient.invalidateQueries({ queryKey: ["admin_reservations"] });
-            setIsResetModalOpen(false);
-            alert(data.message);
-        },
     });
 
     const createMutation = useMutation({
@@ -189,15 +177,6 @@ export default function ReservationsList() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-                    <button
-                        onClick={() => setIsResetModalOpen(true)}
-                        className="flex-none bg-red-100 text-red-600 border border-red-200 px-3 py-2.5 rounded-xl font-bold hover:bg-red-200 transition-all flex items-center gap-2 shadow-sm no-print"
-                        title="Reset System"
-                    >
-                        <Trash2 className="w-4 h-4" />
-                        <span className="hidden xl:inline">Reset</span>
-                    </button>
-
                     <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 bg-blue-50 border border-blue-100 rounded-xl no-print">
                         <div className="flex flex-col">
                             <span className="text-[8px] font-black text-blue-400 uppercase tracking-widest leading-none mb-1">Daily Total</span>
@@ -459,39 +438,6 @@ export default function ReservationsList() {
                     </div>
                 )}
             </div>
-
-            {/* Reset Confirmation Modal */}
-            {isResetModalOpen && (
-                <div className="fixed inset-0 bg-red-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-300">
-                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-in zoom-in-95 duration-200 border-2 border-red-500">
-                        <div className="flex flex-col items-center text-center space-y-4">
-                            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-                                <TriangleAlert className="w-8 h-8 text-red-600" />
-                            </div>
-                            <h2 className="text-2xl font-black text-slate-900">Reset Entire System?</h2>
-                            <p className="text-slate-600">
-                                This will <strong>permanently delete</strong> all reservations, customer data, and logs from the database. This action cannot be undone.
-                            </p>
-                            {/* Simplified confirmation logic */}
-                            <div className="flex gap-3 w-full pt-2">
-                                <button
-                                    onClick={() => setIsResetModalOpen(false)}
-                                    className="flex-grow py-3 rounded-xl font-bold text-slate-600 hover:bg-slate-100 transition-all border border-slate-200"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={() => resetMutation.mutate()}
-                                    disabled={resetMutation.isPending}
-                                    className="flex-[2] bg-red-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-red-200 hover:bg-red-700 transition-all animate-pulse"
-                                >
-                                    {resetMutation.isPending ? "Wiping Data..." : "YES, DELETE ALL"}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {/* Cancel Modal */}
             {isCancelModalOpen && (
