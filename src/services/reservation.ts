@@ -9,7 +9,7 @@ import { checkAvailability, checkBlackout, acquireTableLocks } from "./availabil
 import { findBestTableAssignment } from "./tableAssignment/engine";
 import { TableConfig } from "./tableAssignment/types";
 import { trySmartReassignment } from "./reassignment";
-import { sendReservationConfirmation, sendDepositRequestEmail } from "./email";
+import { sendReservationConfirmation } from "./email";
 import { logger } from "../config/logger";
 
 import { prisma } from "../config/prisma";
