@@ -153,7 +153,7 @@ export async function createReservation(options: CreateReservationOptions) {
     tableIds: [...new Set(allInvolvedTableIds)],
     startTime,
     endTime,
-    ttlMs: 15000, // 15s TTL (sufficient for DB transaction + Stripe call)
+    ttlMs: 35000, // 35s TTL to handle Stripe API latency (per EDGE_CASES_AUDIT.md)
   });
 
   try {

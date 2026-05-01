@@ -4,6 +4,8 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import { env } from "./config/env";
+import { prisma } from "./config/prisma";
+import { redis } from "./config/redis";
 import reservationsRouter from "./routes/reservations";
 import layoutRouter from "./routes/layout";
 import webhooksRouter from "./routes/webhooks";
@@ -60,8 +62,36 @@ app.use(cors({
 }));
 app.use(cookieParser());
 
-app.get("/health", (_req, res) => {
-    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+app.get("/health", async (_req, res) => {
+    const health = {
+        status: "healthy" as "healthy" | "unhealthy",
+        timestamp: new Date().toISOString(),
+        database: "unknown" as "connected" | "disconnected" | "unknown",
+        redis: "unknown" as "connected" | "disconnected" | "unknown",
+    };
+
+    // Check database connectivity
+    try {
+        await prisma.$queryRaw`SELECT 1`;
+        health.database = "connected";
+    } catch (err) {
+        health.database = "disconnected";
+        health.status = "unhealthy";
+        logger.error({ err }, "[Health] Database check failed");
+    }
+
+    // Check Redis connectivity
+    try {
+        await redis.ping();
+        health.redis = "connected";
+    } catch (err) {
+        health.redis = "disconnected";
+        health.status = "unhealthy";
+        logger.error({ err }, "[Health] Redis check failed");
+    }
+
+    const statusCode = health.status === "healthy" ? 200 : 503;
+    res.status(statusCode).json(health);
 });
 
 app.use("/webhooks", express.raw({ type: "application/json" }), webhooksRouter);

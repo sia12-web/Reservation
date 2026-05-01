@@ -43,9 +43,9 @@ export function startCleanupWorker(): Worker {
     "cleanup-pending-deposits",
     async () => {
       // --- Phase 1: Clean up stale PENDING_DEPOSIT reservations ---
-      // Direct reservations: 15-minute window (they see the payment form immediately)
+      // Direct reservations: 30-minute window (they see the payment form immediately)
       // Promoted waitlist guests: 60-minute window (they need time to check email)
-      const directCutoff = new Date(Date.now() - 15 * 60_000);
+      const directCutoff = new Date(Date.now() - 30 * 60_000);
       const promotedCutoff = new Date(Date.now() - 60 * 60_000);
 
       const stale = await prisma.reservation.findMany({
@@ -88,7 +88,7 @@ export function startCleanupWorker(): Worker {
             data: {
               reservationId: reservation.id,
               action: "SYSTEM_AUTO_CANCEL",
-              reason: "Payment window (15m) expired. Tables released.",
+              reason: "Payment window (30m) expired. Tables released.",
               after: { status: "CANCELLED" },
             },
           }),
@@ -106,7 +106,7 @@ export function startCleanupWorker(): Worker {
             tableIds: [],
             cancellationReason: reservation.depositRequestedAt
               ? "Your reservation was automatically cancelled because the security deposit was not completed within 60 minutes. Please rebook if you'd like to reserve again."
-              : "Your reservation was automatically cancelled because the security deposit was not completed within 15 minutes. Please rebook if you'd like to reserve again.",
+              : "Your reservation was automatically cancelled because the security deposit was not completed within 30 minutes. Please rebook if you'd like to reserve again.",
           }).catch(err => logger.error({ err, shortId: reservation.shortId }, "[Cleanup] Failed to send deposit expiry email"));
         }
       }

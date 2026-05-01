@@ -26,7 +26,13 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(npx jest:*)"
+      "Bash(npx jest:*)",
+      "Bash(wc:*)",
+      "Bash(cat:*)",
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git merge:*)",
+      "Bash(git stash:*)"
     ]
   }
 }
