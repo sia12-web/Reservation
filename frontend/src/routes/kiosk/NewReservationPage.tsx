@@ -76,6 +76,7 @@ export default function NewReservationPage() {
           clientSecret={pendingReservation.clientSecret!}
           reservationId={pendingReservation.reservationId}
           amount={50}
+          publishableKey={pendingReservation.stripePublishableKey}
           onSuccess={handlePaymentSuccess}
           onCancel={handlePaymentCancel}
         />
