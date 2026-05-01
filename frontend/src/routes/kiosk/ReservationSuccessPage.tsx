@@ -52,28 +52,30 @@ export default function ReservationSuccessPage() {
 
         {/* Pending Deposit Instructions */}
         {reservation?.status === "PENDING_DEPOSIT" && (
-          <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-6 space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6 space-y-4 animate-in fade-in slide-in-from-top-4 duration-500">
             <div className="flex items-start gap-4">
-              <div className="p-3 bg-white rounded-xl text-amber-600 shadow-sm">
+              <div className="p-3 bg-white rounded-xl text-red-600 shadow-sm">
                 <CreditCard className="w-6 h-6" />
               </div>
               <div className="flex-1">
-                <h3 className="text-xl font-bold text-amber-900">Security Deposit Required</h3>
-                <p className="text-amber-800 font-medium leading-relaxed">
-                  For large parties, we require a $50 deposit to confirm your table.
+                <h3 className="text-xl font-bold text-red-900">Payment Required - Action Needed!</h3>
+                <p className="text-red-800 font-medium leading-relaxed">
+                  Your reservation is NOT confirmed yet. Payment must be completed immediately.
                 </p>
               </div>
             </div>
-            
-            <div className="bg-white/60 rounded-xl p-5 border border-amber-100 space-y-3">
+
+            <div className="bg-white/60 rounded-xl p-5 border border-red-100 space-y-3">
                <div className="flex gap-3">
-                 <div className="w-6 h-6 bg-amber-200 text-amber-900 rounded-full flex items-center justify-center font-black text-xs shrink-0">1</div>
-                 <p className="text-amber-900 font-semibold">Check your email for the secure payment link.</p>
+                 <div className="w-6 h-6 bg-red-200 text-red-900 rounded-full flex items-center justify-center font-black text-xs shrink-0">!</div>
+                 <p className="text-red-900 font-bold">
+                   This reservation will be automatically cancelled in 5 minutes if payment is not received.
+                 </p>
                </div>
                <div className="flex gap-3">
-                 <div className="w-6 h-6 bg-red-100 text-red-700 rounded-full flex items-center justify-center font-black text-xs shrink-0">2</div>
-                 <p className="text-red-700 font-bold">
-                   Payment must be completed in 15 minutes or your table will be released.
+                 <div className="w-6 h-6 bg-red-200 text-red-900 rounded-full flex items-center justify-center font-black text-xs shrink-0">⚠</div>
+                 <p className="text-red-700 font-semibold">
+                   Please contact the restaurant immediately at (XXX) XXX-XXXX to complete payment.
                  </p>
                </div>
             </div>

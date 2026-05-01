@@ -36,7 +36,7 @@ export default function ReservationSummary({ reservation }: ReservationSummaryPr
           </p>
         </div>
       )}
-      {reservation.clientEmail ? (
+      {reservation.clientEmail && reservation.status === "CONFIRMED" ? (
         <div className="mt-4 p-4 bg-blue-50 border border-blue-100 rounded-lg">
           <p className="text-blue-800 text-sm font-medium">
             ✉️ We have sent your reservation confirmation to your email.
