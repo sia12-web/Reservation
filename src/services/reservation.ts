@@ -324,18 +324,9 @@ export async function createReservation(options: CreateReservationOptions) {
 
           result.clientSecret = paymentIntent.client_secret;
 
-          // Send deposit email now that we have the client secret
-          const email = result.reservation.clientEmail;
-          if (email) {
-            sendDepositRequestEmail({
-              to: email,
-              clientName,
-              startTime,
-              shortId: result.reservation.shortId,
-              partySize,
-              tableIds: result.tableIds,
-            }).catch(e => logger.error("Email failed", e));
-          }
+          // Note: No email sent for direct reservations
+          // User must pay immediately on the payment screen
+          // Confirmation email will be sent after payment succeeds (via webhook)
         } catch (stripeError) {
           // Stripe failed after DB committed — mark reservation as needing attention
           logger.error({ msg: "Stripe intent creation failed after reservation commit", error: stripeError, reservationId: result.reservation.id });
