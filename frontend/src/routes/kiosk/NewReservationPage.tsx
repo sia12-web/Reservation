@@ -60,7 +60,7 @@ export default function NewReservationPage() {
         pendingReservation.clientPhone
       );
 
-      alert("❌ Reservation Cancelled\n\nYour reservation has been cancelled. The table is now available for others.\n\nIf you'd like to make a new reservation, please start over.");
+      alert("❌ Reservation Cancelled\n\nYour reservation has been cancelled.\n\nIf you'd like to make a new reservation, please start over.");
 
       // Go back to home/booking page
       navigate("/", { replace: true });
