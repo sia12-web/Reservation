@@ -12,6 +12,7 @@ export type ReservationResponse = {
   startTime: string;
   endTime: string;
   status: string;
+  source?: string; // WEB, KIOSK, PHONE, WALK_IN
   depositStatus: string;
   customerNotes: string | null;
   tableIds?: string[]; // Unified: creation response uses this

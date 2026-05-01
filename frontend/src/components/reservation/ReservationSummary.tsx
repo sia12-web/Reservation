@@ -16,6 +16,7 @@ export default function ReservationSummary({ reservation }: ReservationSummaryPr
         ? "bg-amber-100 text-amber-800"
         : "bg-slate-200 text-slate-800";
 
+  const isAdminReserved = reservation.source === "PHONE";
 
   return (
     <div className="space-y-4">
@@ -24,9 +25,16 @@ export default function ReservationSummary({ reservation }: ReservationSummaryPr
           <p className="text-sm text-slate-500">Reservation ID</p>
           <p className="text-xl font-semibold">{shortId}</p>
         </div>
-        <span className={clsx("px-3 py-1 rounded-full text-sm font-medium", statusClass)}>
-          {status}
-        </span>
+        <div className="flex gap-2">
+          {isAdminReserved && (
+            <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+              Reserved by Admin
+            </span>
+          )}
+          <span className={clsx("px-3 py-1 rounded-full text-sm font-medium", statusClass)}>
+            {status}
+          </span>
+        </div>
       </div>
       {reservation.startTime && reservation.endTime && (
         <div>
