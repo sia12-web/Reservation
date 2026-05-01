@@ -49,7 +49,7 @@ export async function initDb() {
         { id: "T14", x: 830, y: 320, width: 120, height: 70, shape: "RECTANGLE", min: 1, max: 4, type: "STANDARD", pri: 50 },
         { id: "T9", x: 50, y: 50, width: 120, height: 150, shape: "RECTANGLE", min: 6, max: 12, type: "MERGED_FIXED", pri: 100 }, // Zone A
         { id: "T10", x: 220, y: 80, width: 70, height: 110, shape: "RECTANGLE", min: 1, max: 4, type: "STANDARD", pri: 110 }, // Zone A (Inner Hand)
-        { id: "T11", x: 350, y: 80, width: 220, height: 70, shape: "RECTANGLE", min: 8, max: 14, type: "MERGED_FIXED", pri: 150 }, // Zone A (HEAD)
+        { id: "T11", x: 350, y: 80, width: 220, height: 70, shape: "RECTANGLE", min: 8, max: 12, type: "MERGED_FIXED", pri: 150 }, // Zone A (HEAD)
         { id: "T12", x: 650, y: 80, width: 70, height: 110, shape: "RECTANGLE", min: 1, max: 4, type: "STANDARD", pri: 110 }, // Zone A (Inner Hand)
         { id: "T13", x: 800, y: 50, width: 120, height: 150, shape: "RECTANGLE", min: 6, max: 12, type: "MERGED_FIXED", pri: 100 }, // Zone A
     ];
