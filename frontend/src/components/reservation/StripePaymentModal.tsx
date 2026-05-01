@@ -5,9 +5,9 @@ import {
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { confirmDemoPayment } from "../../api/reservations.api";
-import { Loader2, AlertTriangle } from "lucide-react";
+import { Loader2, AlertTriangle, Clock } from "lucide-react";
 
 // Get key from env
 const defaultPublishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || "";
@@ -22,16 +22,16 @@ interface StripePaymentModalProps {
   publishableKey?: string; // New prop for dynamic key
 }
 
-function CheckoutForm({ 
-  onSuccess, 
-  onCancel, 
-  amount = 50, 
+function CheckoutForm({
+  onSuccess,
+  onCancel,
+  amount = 50,
   cancelLabel = "Cancel & Start Over",
   reservationId
-}: { 
-  onSuccess: () => void; 
-  onCancel: () => void; 
-  amount?: number; 
+}: {
+  onSuccess: () => void;
+  onCancel: () => void;
+  amount?: number;
   cancelLabel?: string;
   reservationId?: string;
 }) {
@@ -41,6 +41,27 @@ function CheckoutForm({
   const [processing, setProcessing] = useState(false);
   const [bypassing, setBypassing] = useState(false);
   const [succeeded, setSucceeded] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(5 * 60); // 5 minutes in seconds
+
+  // Countdown timer
+  useEffect(() => {
+    if (succeeded || processing || bypassing) return; // Pause timer during processing
+
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          // Auto-close when time expires
+          alert("⏰ Payment time expired!\n\nYour reservation has been cancelled. Please make a new reservation.");
+          onCancel();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [succeeded, processing, bypassing, onCancel]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,8 +116,25 @@ function CheckoutForm({
     );
   }
 
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
+  const isUrgent = timeLeft <= 60; // Last minute
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Countdown Timer */}
+      <div className={`${isUrgent ? 'bg-red-100 border-red-300 animate-pulse' : 'bg-blue-50 border-blue-200'} border-2 p-4 rounded-xl flex items-center justify-center gap-3`}>
+        <Clock className={`w-6 h-6 ${isUrgent ? 'text-red-700' : 'text-blue-700'}`} />
+        <div className="text-center">
+          <p className={`${isUrgent ? 'text-red-900' : 'text-blue-900'} font-bold text-lg`}>
+            Time Remaining: {minutes}:{seconds.toString().padStart(2, '0')}
+          </p>
+          <p className={`${isUrgent ? 'text-red-700' : 'text-blue-700'} text-xs font-medium`}>
+            {isUrgent ? '⚠️ Hurry! Your reservation will be cancelled soon!' : 'Complete payment to confirm your reservation'}
+          </p>
+        </div>
+      </div>
+
       <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl text-center">
          <p className="text-amber-800 font-semibold mb-1">Security Deposit Required</p>
          <p className="text-amber-700 text-sm">

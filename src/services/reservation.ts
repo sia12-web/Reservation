@@ -9,7 +9,8 @@ import { checkAvailability, checkBlackout, acquireTableLocks } from "./availabil
 import { findBestTableAssignment } from "./tableAssignment/engine";
 import { TableConfig } from "./tableAssignment/types";
 import { trySmartReassignment } from "./reassignment";
-import { sendReservationConfirmation } from "./email";
+import { sendReservationConfirmation, sendDepositRequestEmail } from "./email";
+import { sendDepositSms } from "./sms";
 import { logger } from "../config/logger";
 
 import { prisma } from "../config/prisma";
@@ -324,9 +325,36 @@ export async function createReservation(options: CreateReservationOptions) {
 
           result.clientSecret = paymentIntent.client_secret;
 
-          // Note: No email sent for direct reservations
-          // User must pay immediately on the payment screen
-          // Confirmation email will be sent after payment succeeds (via webhook)
+          // Send payment link based on reservation source
+          const email = result.reservation.clientEmail;
+          if (source === "PHONE" && result.reservation.clientPhone) {
+            // Phone reservation: Send SMS with payment link (60-minute window)
+            // Email is often hard to collect over the phone, so SMS is more reliable
+            sendDepositSms({
+              to: result.reservation.clientPhone,
+              clientName,
+              shortId: result.reservation.shortId,
+              partySize,
+              startTime,
+            }).catch(e => logger.error("SMS failed", e));
+
+            // Also send email if available
+            if (email) {
+              sendDepositRequestEmail({
+                to: email,
+                clientName,
+                clientPhone: result.reservation.clientPhone,
+                partySize,
+                startTime,
+                shortId: result.reservation.shortId,
+                tableIds: finalTableIds,
+              }).catch(e => logger.error("Email failed", e));
+            }
+          } else if (source === "WEB" || source === "KIOSK") {
+            // Direct web/kiosk reservations: NO email or SMS sent
+            // User must pay immediately on the payment screen (5-minute window)
+            // Confirmation email will be sent after payment succeeds (via webhook)
+          }
         } catch (stripeError) {
           // Stripe failed after DB committed — mark reservation as needing attention
           logger.error({ msg: "Stripe intent creation failed after reservation commit", error: stripeError, reservationId: result.reservation.id });

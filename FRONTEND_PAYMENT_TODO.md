@@ -1,4 +1,12 @@
-# ⚠️ CRITICAL: Frontend Payment Integration Required
+# ✅ COMPLETED: Frontend Payment Integration
+
+**Status**: FIXED (2026-04-30)
+
+This issue has been resolved. The payment modal now appears immediately for reservations requiring deposits.
+
+---
+
+# Original Issue (Now Fixed)
 
 ## Current Problem
 
@@ -200,10 +208,79 @@ The current flow is broken and will cause customer complaints.
 
 ---
 
-**Estimated Time**: 2-3 hours
-**Complexity**: Medium
-**Impact**: HIGH - Directly affects user experience and revenue
+## What Was Fixed
+
+### 1. `NewReservationPage.tsx` - Payment Modal Integration ✅
+
+Added state management to show payment modal when deposit is required:
+
+```typescript
+const [showPaymentModal, setShowPaymentModal] = useState(false);
+const [pendingReservation, setPendingReservation] = useState<ReservationResponse | null>(null);
+
+const handleSuccess = (response: unknown) => {
+  const reservation = response as ReservationResponse;
+
+  // Check if deposit is required
+  if (reservation.status === "PENDING_DEPOSIT" && reservation.clientSecret) {
+    // Show payment modal immediately
+    setPendingReservation(reservation);
+    setShowPaymentModal(true);
+  } else {
+    // No payment needed, go directly to success page
+    navigate(`/reservations/${reservation.reservationId}/success`);
+  }
+};
+```
+
+### 2. `StripePaymentModal.tsx` - Countdown Timer ✅
+
+Added 5-minute countdown timer with visual warnings:
+
+```typescript
+const [timeLeft, setTimeLeft] = useState(5 * 60); // 5 minutes
+
+useEffect(() => {
+  const timer = setInterval(() => {
+    setTimeLeft((prev) => {
+      if (prev <= 1) {
+        alert("⏰ Payment time expired!");
+        onCancel();
+        return 0;
+      }
+      return prev - 1;
+    });
+  }, 1000);
+  return () => clearInterval(timer);
+}, []);
+```
+
+Visual timer shows:
+- Blue background for normal time
+- Red background with pulse animation when < 60 seconds
+- Clock icon and countdown in MM:SS format
+
+### 3. SMS Payment Links for Phone Reservations ✅
+
+Created new SMS service for phone reservations:
+
+**Why**: When customers call the restaurant, it's hard to collect email addresses. SMS is more reliable for payment links.
+
+**How it works**:
+- Admin creates phone reservation for 10+ guests
+- System sends SMS with payment link to customer's phone
+- Customer has 60 minutes to pay (vs. 5 minutes for web bookings)
+- Email also sent if available (as backup)
+
+**Files added**:
+- `src/services/sms.ts` - Twilio SMS integration
+- `SMS_SETUP_GUIDE.md` - Complete setup guide
+- Updated `src/config/env.ts` - Added Twilio env vars
+- Updated `src/services/reservation.ts` - Send SMS for PHONE source
 
 ---
+
+**Fixed**: 2026-04-30
+**Status**: DEPLOYED ✅
 
 Last Updated: 2026-04-30
