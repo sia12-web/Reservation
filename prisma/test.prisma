@@ -1,0 +1,8 @@
+datasource db {
+  provider = "postgresql"
+  url      = "test"
+}
+
+model Test {
+  id Int @id
+}

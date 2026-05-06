@@ -1,0 +1,96 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  username      String    @unique
+  password      String
+  firstName     String
+  lastName      String?
+  bio           String?
+  avatar        String?
+  major         String?
+  year          Int?
+  emailVerified Boolean   @default(false)
+  emailVerifiedAt DateTime?
+  courses       CourseEnrollment[]
+  messages      Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+  verificationTokens EmailVerificationToken[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([email])
+  @@index([username])
+}
+
+model Course {
+  id          String              @id @default(cuid())
+  code        String              @unique
+  name        String
+  department  String
+  description String?
+  enrollments CourseEnrollment[]
+  messages    Message[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@index([code])
+  @@index([department])
+}
+
+model CourseEnrollment {
+  id        String   @id @default(cuid())
+  userId    String
+  courseId  String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  semester  String
+  year      Int
+  createdAt DateTime @default(now())
+
+  @@unique([userId, courseId, semester, year])
+  @@index([userId])
+  @@index([courseId])
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  senderId  String
+  receiverId String?
+  courseId  String?
+  sender    User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver  User?    @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+  course    Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([courseId])
+  @@index([createdAt])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+  @@index([userId])
+  @@index([expiresAt])
+}
