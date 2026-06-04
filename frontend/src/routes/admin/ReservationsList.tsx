@@ -12,11 +12,11 @@ import { Link } from "react-router-dom";
 
 export default function ReservationsList() {
     const queryClient = useQueryClient();
-    const [filterStatus, setFilterStatus] = useState("");
+    const [filterStatus, setFilterStatus] = useState("__ACTIVE__");
     const [searchTerm, setSearchTerm] = useState("");
     const [filterDate, setFilterDate] = useState(getRestaurantNow().format("YYYY-MM-DD"));
 
-    const [viewMode, setViewMode] = useState<'day' | 'upcoming'>('day');
+    const [viewMode, setViewMode] = useState<'day' | 'upcoming'>('upcoming');
 
     // Cancel modal state
     const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
