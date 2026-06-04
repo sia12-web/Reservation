@@ -79,9 +79,9 @@ export default function AdminFloorMap() {
     const isOccupied = selectedTable?.status === "OCCUPIED" || selectedTable?.status === "RESERVED";
 
     return (
-        <div className="flex flex-col h-[calc(100vh-64px)] lg:flex-row gap-3 p-3 md:p-4 overflow-hidden">
+        <div className="flex flex-col lg:flex-row gap-4 lg:h-[calc(100vh-120px)] lg:overflow-hidden">
             {/* Main Area */}
-            <div className="flex-grow flex flex-col bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 overflow-hidden">
+            <div className="w-full lg:flex-grow flex flex-col bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 overflow-hidden lg:h-full">
                 <div className="p-4 md:p-6 pb-2 flex-grow flex flex-col">
                     <div className="flex flex-col gap-4 mb-6 z-10 relative">
                         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -169,8 +169,8 @@ export default function AdminFloorMap() {
             </div>
 
             {/* Sidebar */}
-            <div className="w-full lg:w-80 xl:w-96 flex flex-col gap-3 h-full overflow-hidden">
-                <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-5 flex-grow overflow-y-auto">
+            <div className="w-full lg:w-80 xl:w-96 flex flex-col gap-3 lg:h-full lg:overflow-hidden">
+                <div className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-5 lg:flex-grow lg:overflow-y-auto">
                     <h3 className="text-lg font-black text-slate-900 mb-6 flex items-center gap-2">
                         <Info className="w-6 h-6 text-blue-600" />
                         Table Details

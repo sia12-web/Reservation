@@ -95,8 +95,9 @@ export default function FloorMap({
     };
 
     // Calculate bounds dynamically from tables to ensure they are all visible
-    const bounds = layout.tables.length > 0 
-        ? layout.tables.reduce(
+    const visibleTables = layout.tables.filter(t => t.id !== 'T15');
+    const bounds = visibleTables.length > 0 
+        ? visibleTables.reduce(
             (acc, t) => {
                 return {
                     minX: Math.min(acc.minX, t.x),
@@ -138,7 +139,7 @@ export default function FloorMap({
 
     return (
         <div className="w-full h-full relative select-none flex flex-col border border-slate-200 rounded-xl overflow-hidden bg-slate-50/50">
-            <div className="flex-grow relative overflow-hidden flex items-center justify-center bg-white/40 min-h-[400px]">
+            <div className="flex-grow relative overflow-hidden flex items-center justify-center bg-white/40 min-h-[280px] sm:min-h-[360px] md:min-h-[400px]">
                 <div className="w-full max-w-7xl p-4 sm:p-6 h-full flex items-center justify-center">
                     <svg
                         viewBox={`${bounds.minX - PADDING} ${bounds.minY - PADDING} ${bounds.maxX - bounds.minX + PADDING * 2} ${bounds.maxY - bounds.minY + PADDING * 2}`}
