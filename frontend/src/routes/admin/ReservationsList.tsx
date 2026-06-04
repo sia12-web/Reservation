@@ -160,7 +160,12 @@ export default function ReservationsList() {
             </style>
 
             <div className="print-header">
-                <h1 className="text-2xl font-black">Daily Reservations - {dayjs(filterDate).isValid() ? parseInRestaurantTime(filterDate, "00:00").format("dddd, MMMM D, YYYY") : "Please select a valid date"}</h1>
+                <h1 className="text-2xl font-black">
+                    {viewMode === 'upcoming' 
+                        ? "Upcoming Reservations" 
+                        : `Daily Reservations - ${dayjs(filterDate).isValid() ? parseInRestaurantTime(filterDate, "00:00").format("dddd, MMMM D, YYYY") : "Please select a valid date"}`
+                    }
+                </h1>
                 <p className="text-slate-500 font-bold">Total Reservations: {activeResCount} | Total Guests: {totalGuestsForDay}</p>
             </div>
 
