@@ -6,7 +6,7 @@ export const transporter = {
         const fromMatch = params.from.match(/^(.*?) <(.*?)>$/);
         const sender = fromMatch 
             ? { name: fromMatch[1].trim(), email: fromMatch[2].trim() } 
-            : { name: "Diba Restaurant", email: "diba.restaurent@gmail.com" };
+            : { name: "Diba Restaurant", email: "diba.restaurant@yahoo.com" };
         
         const toList = [{ email: params.to }];
         const ccList = params.cc ? [{ email: params.cc }] : undefined;
