@@ -74,6 +74,10 @@ export async function sendLateWarning(id: string) {
     return httpPost<{ message: string }>(`/admin/reservations/${id}/late-warning`, {});
 }
 
+export async function checkInReservation(id: string) {
+    return httpPost<{ message: string; checkedInAt: string }>(`/admin/reservations/${id}/check-in`, {});
+}
+
 export async function createReservation(payload: {
     clientName: string;
     clientPhone: string;

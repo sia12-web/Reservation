@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchFloorState, sendLateWarning } from "../../api/admin.api";
+import { fetchFloorState, sendLateWarning, checkInReservation } from "../../api/admin.api";
 import { X, Clock, Mail } from "lucide-react";
 import dayjs from "dayjs";
 
@@ -88,13 +88,17 @@ export default function PromptSystem() {
         if (!currentPrompt) return;
 
         if (isHere) {
-            // User is here. Dismiss. Admin can check them in manually.
+            // User is here. Check them in!
+            checkInReservation(currentPrompt.id).then(() => {
+                queryClient.invalidateQueries({ queryKey: ["admin_floor_state"] });
+                queryClient.invalidateQueries({ queryKey: ["admin_reservations"] });
+            });
             handleDismiss(currentPrompt.id);
         } else {
             // User is NOT here. Send Email.
             sendLateWarning(currentPrompt.id).then(() => {
                 queryClient.invalidateQueries({ queryKey: ["admin_floor_state"] });
-                // Also invalidate list if needed
+                queryClient.invalidateQueries({ queryKey: ["admin_reservations"] });
             });
             handleDismiss(currentPrompt.id);
         }
