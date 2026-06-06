@@ -177,6 +177,76 @@ export function startCleanupWorker(): Worker {
           logger.error({ err, shortId: res.shortId }, "[Cleanup] Refund retry failed");
         }
       }
+
+      // --- Phase 4: Auto-complete / Auto-no-show past active reservations ---
+      const nowTime = new Date();
+      
+      // 1. Auto-complete CHECKED_IN reservations that ended 30+ minutes ago
+      const autocompleteCutoff = new Date(nowTime.getTime() - 30 * 60_000);
+      const checkedInStale = await prisma.reservation.findMany({
+        where: {
+          status: "CHECKED_IN",
+          endTime: { lt: autocompleteCutoff }
+        },
+        select: { id: true, shortId: true }
+      });
+
+      for (const res of checkedInStale) {
+        try {
+          await prisma.$transaction([
+            prisma.reservationTable.deleteMany({ where: { reservationId: res.id } }),
+            prisma.reservation.update({
+              where: { id: res.id },
+              data: { status: "COMPLETED", completedAt: nowTime, freedAt: nowTime, version: { increment: 1 } }
+            }),
+            prisma.auditLog.create({
+              data: {
+                reservationId: res.id,
+                action: "SYSTEM_AUTO_COMPLETE",
+                reason: "Checked-in reservation passed end time by 30+ minutes.",
+                after: { status: "COMPLETED" }
+              }
+            })
+          ]);
+          logger.info({ shortId: res.shortId }, "[Cleanup] Auto-completed past checked-in reservation");
+        } catch (err) {
+          logger.error({ err, shortId: res.shortId }, "[Cleanup] Failed to auto-complete reservation");
+        }
+      }
+
+      // 2. Auto-no-show CONFIRMED/HOLD reservations that passed start time by 60+ minutes and have ended
+      const noshowCutoff = new Date(nowTime.getTime() - 60 * 60_000);
+      const confirmedStale = await prisma.reservation.findMany({
+        where: {
+          status: { in: ["CONFIRMED", "HOLD"] as any },
+          startTime: { lt: noshowCutoff },
+          endTime: { lt: nowTime }
+        },
+        select: { id: true, shortId: true }
+      });
+
+      for (const res of confirmedStale) {
+        try {
+          await prisma.$transaction([
+            prisma.reservationTable.deleteMany({ where: { reservationId: res.id } }),
+            prisma.reservation.update({
+              where: { id: res.id },
+              data: { status: "NO_SHOW", freedAt: nowTime, version: { increment: 1 } }
+            }),
+            prisma.auditLog.create({
+              data: {
+                reservationId: res.id,
+                action: "SYSTEM_AUTO_NO_SHOW",
+                reason: "Confirmed reservation passed start time by 60+ minutes with no check-in.",
+                after: { status: "NO_SHOW" }
+              }
+            })
+          ]);
+          logger.info({ shortId: res.shortId }, "[Cleanup] Auto-no-showed past confirmed reservation");
+        } catch (err) {
+          logger.error({ err, shortId: res.shortId }, "[Cleanup] Failed to auto-no-show reservation");
+        }
+      }
     },
     { connection }
   );

@@ -100,7 +100,10 @@ export default function ReservationsList() {
         refetchInterval: 10000, // Poll more frequently for alerts
     });
 
-    const allReservations = reservations || [];
+    const rawReservations = reservations || [];
+    const allReservations = viewMode === 'upcoming'
+        ? rawReservations.filter((r: ReservationAdmin) => dayjs(r.endTime).isAfter(getRestaurantNow()))
+        : rawReservations;
     const globalWaitlist = waitlistData || [];
     
     // 1. Status Filtering
