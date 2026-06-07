@@ -114,4 +114,41 @@ describe("Admin API Endpoints", () => {
             }));
         });
     });
+
+    describe("POST /admin/reservations/:id/undo-check-in", () => {
+        it("reverts status to CONFIRMED and clears checkedInAt", async () => {
+            prismaMock.reservation.findUnique.mockResolvedValue({
+                id: "res-checkedin",
+                status: "CHECKED_IN",
+                reservationTables: [],
+            });
+
+            const response = await request(app)
+                .post("/api/admin/reservations/res-checkedin/undo-check-in");
+
+            expect(response.status).toBe(200);
+            expect(prismaMock.reservation.update).toHaveBeenCalledWith(expect.objectContaining({
+                where: { id: "res-checkedin" },
+                data: expect.objectContaining({
+                    status: "CONFIRMED",
+                    checkedInAt: null,
+                }),
+            }));
+        });
+
+        it("returns 400 if reservation is not checked in", async () => {
+            prismaMock.reservation.findUnique.mockResolvedValue({
+                id: "res-confirmed",
+                status: "CONFIRMED",
+                reservationTables: [],
+            });
+
+            const response = await request(app)
+                .post("/api/admin/reservations/res-confirmed/undo-check-in");
+
+            expect(response.status).toBe(400);
+            expect(response.body.error).toContain("Only CHECKED_IN reservations can be undone");
+        });
+    });
 });
+

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchAdminReservation, reassignTables, fetchFloorState, checkInReservation } from "../../api/admin.api";
+import { fetchAdminReservation, reassignTables, fetchFloorState, checkInReservation, undoCheckInReservation } from "../../api/admin.api";
 import { ChevronLeft, Table as TableIcon, Users, Clock, Phone, Mail, Hash, AlertCircle, Loader2, CalendarDays, X, User, Info } from "lucide-react";
 import dayjs from "dayjs";
 import { toRestaurantTime } from "../../utils/time";
@@ -57,6 +57,22 @@ export default function ReservationDetails() {
     const handleCheckIn = () => {
         setError(null);
         checkInMutation.mutate();
+    };
+
+    const undoCheckInMutation = useMutation({
+        mutationFn: () => undoCheckInReservation(id!),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["admin_reservation", id] });
+            queryClient.invalidateQueries({ queryKey: ["admin_floor_availability"] });
+        },
+        onError: (err: any) => {
+            setError(err.message || "Failed to undo check-in");
+        },
+    });
+
+    const handleUndoCheckIn = () => {
+        setError(null);
+        undoCheckInMutation.mutate();
     };
 
     if (isResLoading || !res) return <div className="flex items-center justify-center min-h-[400px]">
@@ -246,6 +262,16 @@ export default function ReservationDetails() {
                                      >
                                          <Users className="w-5 h-5 text-white" />
                                          {checkInMutation.isPending ? "Checking In..." : "Check In Guest"}
+                                     </button>
+                                 )}
+                                 {res.status === 'CHECKED_IN' && (
+                                     <button
+                                         onClick={() => handleUndoCheckIn()}
+                                         disabled={undoCheckInMutation.isPending}
+                                         className="mt-6 w-full bg-amber-600 hover:bg-amber-700 text-white py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-amber-200/50 flex items-center justify-center gap-2"
+                                     >
+                                         <Users className="w-5 h-5 text-white" />
+                                         {undoCheckInMutation.isPending ? "Undoing..." : "Undo Check In"}
                                      </button>
                                  )}
                                  {!['CANCELLED', 'COMPLETED', 'NO_SHOW'].includes(res.status) && (

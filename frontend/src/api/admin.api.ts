@@ -78,6 +78,10 @@ export async function checkInReservation(id: string) {
     return httpPost<{ message: string; checkedInAt: string }>(`/admin/reservations/${id}/check-in`, {});
 }
 
+export async function undoCheckInReservation(id: string) {
+    return httpPost<{ message: string }>(`/admin/reservations/${id}/undo-check-in`, {});
+}
+
 export async function createReservation(payload: {
     clientName: string;
     clientPhone: string;

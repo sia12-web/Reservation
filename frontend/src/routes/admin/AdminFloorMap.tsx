@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchFloorState, freeTable, checkInReservation } from "../../api/admin.api";
+import { fetchFloorState, freeTable, checkInReservation, undoCheckInReservation } from "../../api/admin.api";
 import FloorMap from "../../components/reservation/FloorMap";
 import {
     Power, Info, AlertCircle, CheckCircle2,
@@ -85,6 +85,18 @@ export default function AdminFloorMap() {
 
     const handleCheckIn = (id: string) => {
         checkInMutation.mutate(id);
+    };
+
+    const undoCheckInMutation = useMutation({
+        mutationFn: (id: string) => undoCheckInReservation(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["admin_floor_state"] });
+            queryClient.invalidateQueries({ queryKey: ["admin_reservations"] });
+        }
+    });
+
+    const handleUndoCheckIn = (id: string) => {
+        undoCheckInMutation.mutate(id);
     };
 
     const selectedTable = floor?.tables.find(t => t.id === selectedTableId);
@@ -241,6 +253,18 @@ export default function AdminFloorMap() {
                                                         className="relative z-20 w-full mt-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-xs transition-all flex items-center justify-center gap-1.5"
                                                     >
                                                         Check In
+                                                    </button>
+                                                )}
+                                                {res.status === 'CHECKED_IN' && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            handleUndoCheckIn(res.id);
+                                                        }}
+                                                        className="relative z-20 w-full mt-3 bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 rounded-lg text-xs transition-all flex items-center justify-center gap-1.5"
+                                                    >
+                                                        Undo Check In
                                                     </button>
                                                 )}
                                             </div>

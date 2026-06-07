@@ -436,6 +436,50 @@ router.post(
 );
 
 router.post(
+  "/reservations/:id/undo-check-in",
+  asyncHandler(async (req: Request, res: Response) => {
+    const reservationId = req.params.id as string;
+
+    const reservation = await prisma.reservation.findUnique({
+      where: { id: reservationId },
+      include: { reservationTables: true },
+    });
+
+    if (!reservation) throw new HttpError(404, "Reservation not found");
+
+    // Only CHECKED_IN reservations can be undone
+    if (reservation.status !== "CHECKED_IN") {
+      throw new HttpError(400, `Cannot undo check-in for a ${reservation.status} reservation. Only CHECKED_IN reservations can be undone.`);
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.reservation.update({
+        where: { id: reservationId },
+        data: {
+          status: "CONFIRMED",
+          checkedInAt: null,
+          version: { increment: 1 },
+        },
+      });
+
+      await tx.auditLog.create({
+        data: {
+          reservationId,
+          action: "RESERVATION_CHECK_IN_UNDONE",
+          before: maskPII(reservation) as Prisma.JsonObject,
+          after: { status: "CONFIRMED", checkedInAt: null } as Prisma.JsonObject,
+          reason: "Check-in undone by admin",
+        },
+      });
+    });
+
+    res.json({
+      message: "Check-in undone successfully",
+    });
+  })
+);
+
+router.post(
   "/reservations/:id/cancel",
   asyncHandler(async (req: Request, res: Response) => {
     const reservationId = req.params.id as string;
