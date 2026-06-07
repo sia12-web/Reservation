@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchAdminReservation, reassignTables, fetchFloorState } from "../../api/admin.api";
+import { fetchAdminReservation, reassignTables, fetchFloorState, checkInReservation } from "../../api/admin.api";
 import { ChevronLeft, Table as TableIcon, Users, Clock, Phone, Mail, Hash, AlertCircle, Loader2, CalendarDays, X, User, Info } from "lucide-react";
 import dayjs from "dayjs";
 import { toRestaurantTime } from "../../utils/time";
@@ -42,6 +42,22 @@ export default function ReservationDetails() {
             setError(err.message || "Failed to reassign tables");
         },
     });
+
+    const checkInMutation = useMutation({
+        mutationFn: () => checkInReservation(id!),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["admin_reservation", id] });
+            queryClient.invalidateQueries({ queryKey: ["admin_floor_availability"] });
+        },
+        onError: (err: any) => {
+            setError(err.message || "Failed to check in guest");
+        },
+    });
+
+    const handleCheckIn = () => {
+        setError(null);
+        checkInMutation.mutate();
+    };
 
     if (isResLoading || !res) return <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
@@ -222,18 +238,28 @@ export default function ReservationDetails() {
                                         </div>
                                     ))}
                                 </div>
-                                {!['CANCELLED', 'COMPLETED', 'NO_SHOW'].includes(res.status) && (
-                                    <button
-                                        onClick={() => {
-                                            setIsReassigning(true);
-                                            setNewTableIds(res.tableIds);
-                                        }}
-                                        className="mt-6 w-full bg-blue-50 text-blue-700 hover:bg-blue-100 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all border border-blue-200 flex items-center justify-center gap-2"
-                                    >
-                                        <TableIcon className="w-5 h-5 text-blue-600" />
-                                        Modify Table Selection
-                                    </button>
-                                )}
+                                 {res.status === 'CONFIRMED' && (
+                                     <button
+                                         onClick={() => handleCheckIn()}
+                                         disabled={checkInMutation.isPending}
+                                         className="mt-6 w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-200/50 flex items-center justify-center gap-2"
+                                     >
+                                         <Users className="w-5 h-5 text-white" />
+                                         {checkInMutation.isPending ? "Checking In..." : "Check In Guest"}
+                                     </button>
+                                 )}
+                                 {!['CANCELLED', 'COMPLETED', 'NO_SHOW'].includes(res.status) && (
+                                     <button
+                                         onClick={() => {
+                                             setIsReassigning(true);
+                                             setNewTableIds(res.tableIds);
+                                         }}
+                                         className="mt-6 w-full bg-blue-50 text-blue-700 hover:bg-blue-100 py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all border border-blue-200 flex items-center justify-center gap-2"
+                                     >
+                                         <TableIcon className="w-5 h-5 text-blue-600" />
+                                         Modify Table Selection
+                                     </button>
+                                 )}
                             </div>
                         </div>
                     </div>

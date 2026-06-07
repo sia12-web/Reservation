@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchFloorState, freeTable } from "../../api/admin.api";
+import { fetchFloorState, freeTable, checkInReservation } from "../../api/admin.api";
 import FloorMap from "../../components/reservation/FloorMap";
 import {
     Power, Info, AlertCircle, CheckCircle2,
@@ -74,6 +74,18 @@ export default function AdminFloorMap() {
             setReason("");
         }
     });
+
+    const checkInMutation = useMutation({
+        mutationFn: (id: string) => checkInReservation(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["admin_floor_state"] });
+            queryClient.invalidateQueries({ queryKey: ["admin_reservations"] });
+        }
+    });
+
+    const handleCheckIn = (id: string) => {
+        checkInMutation.mutate(id);
+    };
 
     const selectedTable = floor?.tables.find(t => t.id === selectedTableId);
     const isOccupied = selectedTable?.status === "OCCUPIED" || selectedTable?.status === "RESERVED";
@@ -203,21 +215,35 @@ export default function AdminFloorMap() {
                                 {selectedTable.reservations.length > 0 ? (
                                     <div className="space-y-3">
                                         {selectedTable.reservations.map(res => (
-                                            <Link
+                                            <div
                                                 key={res.id}
-                                                to={`/admin/reservations/${res.id}`}
-                                                className="block p-4 bg-white border border-slate-100 rounded-xl hover:shadow-md transition-all group"
+                                                className="block p-4 bg-white border border-slate-100 rounded-xl hover:shadow-md transition-all group relative"
                                             >
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <span className="font-mono text-xs font-black text-blue-600">#{res.shortId}</span>
-                                                    <StatusBadge status={res.status} />
+                                                <Link to={`/admin/reservations/${res.id}`} className="absolute inset-0 z-0" />
+                                                <div className="relative z-10 pointer-events-none">
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <span className="font-mono text-xs font-black text-blue-600">#{res.shortId}</span>
+                                                        <StatusBadge status={res.status} />
+                                                    </div>
+                                                    <div className="font-black text-slate-900 group-hover:text-blue-600 transition-colors uppercase tracking-tight">{res.clientName}</div>
+                                                    <div className="text-sm font-bold text-slate-500 mt-1 flex justify-between">
+                                                        <span>{toRestaurantTime(res.startTime).format("HH:mm")} - {toRestaurantTime(res.endTime).format("HH:mm")}</span>
+                                                        <span>{res.partySize} Guests</span>
+                                                    </div>
                                                 </div>
-                                                <div className="font-black text-slate-900 group-hover:text-blue-600 transition-colors uppercase tracking-tight">{res.clientName}</div>
-                                                <div className="text-sm font-bold text-slate-500 mt-1 flex justify-between">
-                                                    <span>{toRestaurantTime(res.startTime).format("HH:mm")} - {toRestaurantTime(res.endTime).format("HH:mm")}</span>
-                                                    <span>{res.partySize} Guests</span>
-                                                </div>
-                                            </Link>
+                                                {res.status === 'CONFIRMED' && (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            handleCheckIn(res.id);
+                                                        }}
+                                                        className="relative z-20 w-full mt-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-xs transition-all flex items-center justify-center gap-1.5"
+                                                    >
+                                                        Check In
+                                                    </button>
+                                                )}
+                                            </div>
                                         ))}
                                     </div>
                                 ) : (

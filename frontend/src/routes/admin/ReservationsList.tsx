@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchAdminReservations, cancelReservation, createReservation } from "../../api/admin.api";
+import { fetchAdminReservations, cancelReservation, createReservation, checkInReservation } from "../../api/admin.api";
 import type { ReservationAdmin } from "../../api/admin.api";
 import dayjs from "dayjs";
 import { parseInRestaurantTime, toUtcIso, toRestaurantTime, getRestaurantNow } from "../../utils/time";
@@ -71,6 +71,17 @@ export default function ReservationsList() {
             setSelectedResId(null);
         },
     });
+
+    const checkInMutation = useMutation({
+        mutationFn: (id: string) => checkInReservation(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["admin_reservations"] });
+        },
+    });
+
+    const handleCheckIn = (id: string) => {
+        checkInMutation.mutate(id);
+    };
 
     const { data: reservations, isLoading, error } = useQuery({
         queryKey: ["admin_reservations", filterDate, viewMode],
@@ -413,6 +424,14 @@ export default function ReservationsList() {
                                         </td>
                                         <td className="px-3 py-2.5 no-print">
                                             <div className="flex gap-2">
+                                                {res.status === "CONFIRMED" && (
+                                                    <button
+                                                        onClick={() => handleCheckIn(res.id)}
+                                                        className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-lg transition-all text-xs border border-transparent shadow-sm"
+                                                    >
+                                                        Check In
+                                                    </button>
+                                                )}
                                                 {["CONFIRMED", "PENDING_DEPOSIT"].includes(res.status) && (
                                                     <button
                                                         onClick={() => { setSelectedResId(res.id); setIsCancelModalOpen(true); }}
