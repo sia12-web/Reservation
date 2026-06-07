@@ -214,7 +214,7 @@ export function startCleanupWorker(): Worker {
         }
       }
 
-      // 2. Auto-no-show CONFIRMED/HOLD reservations that passed start time by 60+ minutes and have ended
+      // 2. Auto-complete CONFIRMED/HOLD reservations that passed start time by 60+ minutes and have ended
       const noshowCutoff = new Date(nowTime.getTime() - 60 * 60_000);
       const confirmedStale = await prisma.reservation.findMany({
         where: {
@@ -231,20 +231,20 @@ export function startCleanupWorker(): Worker {
             prisma.reservationTable.deleteMany({ where: { reservationId: res.id } }),
             prisma.reservation.update({
               where: { id: res.id },
-              data: { status: "NO_SHOW", freedAt: nowTime, version: { increment: 1 } }
+              data: { status: "COMPLETED", completedAt: nowTime, freedAt: nowTime, version: { increment: 1 } }
             }),
             prisma.auditLog.create({
               data: {
                 reservationId: res.id,
-                action: "SYSTEM_AUTO_NO_SHOW",
-                reason: "Confirmed reservation passed start time by 60+ minutes with no check-in.",
-                after: { status: "NO_SHOW" }
+                action: "SYSTEM_AUTO_COMPLETE",
+                reason: "Confirmed reservation passed start time by 60+ minutes with no check-in, marked as completed.",
+                after: { status: "COMPLETED" }
               }
             })
           ]);
-          logger.info({ shortId: res.shortId }, "[Cleanup] Auto-no-showed past confirmed reservation");
+          logger.info({ shortId: res.shortId }, "[Cleanup] Auto-completed past confirmed reservation");
         } catch (err) {
-          logger.error({ err, shortId: res.shortId }, "[Cleanup] Failed to auto-no-show reservation");
+          logger.error({ err, shortId: res.shortId }, "[Cleanup] Failed to auto-complete reservation");
         }
       }
     },
