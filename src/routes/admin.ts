@@ -407,6 +407,12 @@ router.post(
 
     const now = new Date();
 
+    // Prevent checking in a reservation more than 15 minutes before its start time
+    const earliestAllowed = new Date(reservation.startTime.getTime() - 15 * 60 * 1000);
+    if (now < earliestAllowed) {
+      throw new HttpError(400, "Cannot check in a reservation more than 15 minutes before its start time.");
+    }
+
     await prisma.$transaction(async (tx) => {
       await tx.reservation.update({
         where: { id: reservationId },

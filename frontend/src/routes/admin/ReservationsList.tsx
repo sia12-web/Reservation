@@ -435,7 +435,7 @@ export default function ReservationsList() {
                                         </td>
                                         <td className="px-3 py-2.5 no-print">
                                             <div className="flex gap-2">
-                                                {res.status === "CONFIRMED" && (
+                                                {res.status === "CONFIRMED" && getRestaurantNow().isAfter(toRestaurantTime(res.startTime).subtract(15, 'minute')) && (
                                                     <button
                                                         onClick={() => handleCheckIn(res.id)}
                                                         className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-lg transition-all text-xs border border-transparent shadow-sm"

@@ -115,6 +115,45 @@ describe("Admin API Endpoints", () => {
         });
     });
 
+    describe("POST /admin/reservations/:id/check-in", () => {
+        it("allows check-in if reservation is confirmed and starting within 15 minutes", async () => {
+            const now = new Date();
+            prismaMock.reservation.findUnique.mockResolvedValue({
+                id: "res-confirmed-near",
+                status: "CONFIRMED",
+                startTime: new Date(now.getTime() + 10 * 60 * 1000), // starts in 10 minutes
+                reservationTables: [],
+            });
+
+            const response = await request(app)
+                .post("/api/admin/reservations/res-confirmed-near/check-in");
+
+            expect(response.status).toBe(200);
+            expect(prismaMock.reservation.update).toHaveBeenCalledWith(expect.objectContaining({
+                where: { id: "res-confirmed-near" },
+                data: expect.objectContaining({
+                    status: "CHECKED_IN",
+                }),
+            }));
+        });
+
+        it("returns 400 if reservation is confirmed but starts in more than 15 minutes", async () => {
+            const now = new Date();
+            prismaMock.reservation.findUnique.mockResolvedValue({
+                id: "res-confirmed-future",
+                status: "CONFIRMED",
+                startTime: new Date(now.getTime() + 20 * 60 * 1000), // starts in 20 minutes
+                reservationTables: [],
+            });
+
+            const response = await request(app)
+                .post("/api/admin/reservations/res-confirmed-future/check-in");
+
+            expect(response.status).toBe(400);
+            expect(response.body.error).toContain("Cannot check in a reservation more than 15 minutes before its start time");
+        });
+    });
+
     describe("POST /admin/reservations/:id/undo-check-in", () => {
         it("reverts status to CONFIRMED and clears checkedInAt", async () => {
             prismaMock.reservation.findUnique.mockResolvedValue({

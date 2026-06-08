@@ -243,7 +243,7 @@ export default function AdminFloorMap() {
                                                         <span>{res.partySize} Guests</span>
                                                     </div>
                                                 </div>
-                                                {res.status === 'CONFIRMED' && (
+                                                {res.status === 'CONFIRMED' && getRestaurantNow().isAfter(toRestaurantTime(res.startTime).subtract(15, 'minute')) && (
                                                     <button
                                                         onClick={(e) => {
                                                             e.preventDefault();
