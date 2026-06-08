@@ -12,7 +12,7 @@ export const SLOT_INTERVAL_MINUTES = Number(
   import.meta.env.VITE_SLOT_INTERVAL_MINUTES || 15
 );
 
-const DAY_START_HOUR = 12; // 12:00 PM
+const DAY_START_HOUR = 11; // 11:00 AM to allow 11:30 AM opening slots
 
 export function getRestaurantNow(): Dayjs {
   return dayjs().tz(RESTAURANT_TIMEZONE);
@@ -43,8 +43,7 @@ export function getNextStartSlot(
   intervalMinutes = SLOT_INTERVAL_MINUTES
 ): Dayjs {
   const rounded = roundUpToSlot(fromTime, intervalMinutes);
-  // If rounding lands before 12:00 PM (e.g., 11:50 PM -> 12:00 AM next day),
-  // clamp forward to 12:00 PM of that same day.
+  // If rounding lands before 11:00 AM, clamp forward to 11:00 AM of that same day.
   if (rounded.hour() < DAY_START_HOUR) {
     return rounded.hour(DAY_START_HOUR).minute(0).second(0).millisecond(0);
   }
@@ -57,15 +56,21 @@ export function isWithinBusinessHours(time: Dayjs): boolean {
   const minute = time.minute();
   const timeNum = hour * 100 + minute;
 
-  // Monday-Thursday (1-4) and Sunday (0)
-  if (day >= 0 && day <= 4) {
-    // 12:00 - 21:45
-    return timeNum >= 1200 && timeNum <= 2145;
+  // Monday-Thursday (1-4): 4:00 PM - 10:00 PM
+  // Last bookable: 90 min before close = 20:30 (8:30 PM)
+  if (day >= 1 && day <= 4) {
+    return timeNum >= 1600 && timeNum <= 2030;
   }
 
-  // Friday & Saturday (5-6)
-  // 12:00 - 22:15
-  return timeNum >= 1200 && timeNum <= 2215;
+  // Friday & Saturday (5-6): 11:30 AM - 10:30 PM
+  // Last bookable: 90 min before close = 21:00 (9:00 PM)
+  if (day === 5 || day === 6) {
+    return timeNum >= 1130 && timeNum <= 2100;
+  }
+
+  // Sunday (0): 11:30 AM - 10:00 PM
+  // Last bookable: 90 min before close = 20:30 (8:30 PM)
+  return timeNum >= 1130 && timeNum <= 2030;
 }
 
 export function generateTimeSlots(
