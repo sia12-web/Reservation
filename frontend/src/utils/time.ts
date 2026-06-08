@@ -97,6 +97,14 @@ export function generateTimeSlots(
   return slots;
 }
 
+export function getFirstValidSlot(
+  fromTime: Dayjs = getRestaurantNow(),
+  intervalMinutes = SLOT_INTERVAL_MINUTES
+): Dayjs {
+  const generated = generateTimeSlots(1, fromTime, intervalMinutes);
+  return generated.length > 0 ? generated[0] : getNextStartSlot(fromTime, intervalMinutes);
+}
+
 export function toUtcIso(time: Dayjs): string {
   if (!time || !time.isValid()) return "";
   return time.utc().toISOString();

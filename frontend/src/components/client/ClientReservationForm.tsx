@@ -25,13 +25,13 @@ const SLOT_PAGE_SIZE = 12;
 const TRY_OPTIONS = [15, 30, 45];
 
 export default function ClientReservationForm({ onSuccess }: ClientReservationFormProps) {
-  const { generateTimeSlots, getNextStartSlot, getRestaurantNow } = useRestaurantTime();
+  const { generateTimeSlots, getFirstValidSlot, getRestaurantNow } = useRestaurantTime();
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [specialRequests, setSpecialRequests] = useState("");
   const [partySize, setPartySize] = useState(2);
-  const [selectedSlot, setSelectedSlot] = useState(() => getNextStartSlot(getRestaurantNow()));
+  const [selectedSlot, setSelectedSlot] = useState(() => getFirstValidSlot(getRestaurantNow()));
   const [selectedDay, setSelectedDay] = useState(() => selectedSlot.startOf("day"));
   const [slotPage, setSlotPage] = useState(0);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
@@ -82,7 +82,7 @@ export default function ClientReservationForm({ onSuccess }: ClientReservationFo
     setSpecialRequests("");
     setPartySize(2);
     setSelectedDay(getRestaurantNow().startOf("day"));
-    setSelectedSlot(getNextStartSlot(getRestaurantNow()));
+    setSelectedSlot(getFirstValidSlot(getRestaurantNow()));
     setSlotPage(0);
     setFieldErrors({});
     setFormError(null);
@@ -134,7 +134,7 @@ export default function ClientReservationForm({ onSuccess }: ClientReservationFo
             error.message?.toLowerCase().includes("align") ||
             error.message?.toLowerCase().includes("future")
           ) {
-            setSelectedSlot(getNextStartSlot(getRestaurantNow()));
+            setSelectedSlot(getFirstValidSlot(getRestaurantNow()));
           }
 
           setFieldErrors(nextErrors);
@@ -259,7 +259,7 @@ export default function ClientReservationForm({ onSuccess }: ClientReservationFo
               const now = getRestaurantNow();
               const noon = dayStart.hour(12).minute(0).second(0).millisecond(0);
               const fromTime = noon.isAfter(now) ? noon : now;
-              setSelectedSlot(getNextStartSlot(fromTime));
+              setSelectedSlot(getFirstValidSlot(fromTime));
               setSlotPage(0);
             }}
             size="client"

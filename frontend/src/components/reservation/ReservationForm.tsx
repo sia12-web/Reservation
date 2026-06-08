@@ -40,7 +40,7 @@ export default function ReservationForm({
   onSuccess,
 }: ReservationFormProps) {
   const { resetKiosk } = useKioskReset();
-  const { generateTimeSlots, getNextStartSlot, getRestaurantNow, toRestaurantTime, toUtcIso } =
+  const { generateTimeSlots, getFirstValidSlot, getRestaurantNow, toRestaurantTime, toUtcIso } =
     useRestaurantTime();
 
   const [clientName, setClientName] = useState(defaultValues?.clientName ?? "");
@@ -52,7 +52,7 @@ export default function ReservationForm({
     if (defaultValues?.startTime) {
       return toRestaurantTime(defaultValues.startTime);
     }
-    return getNextStartSlot(getRestaurantNow());
+    return getFirstValidSlot(getRestaurantNow());
   });
   const [selectedDay, setSelectedDay] = useState(() => selectedSlot.startOf("day"));
   const [slotPage, setSlotPage] = useState(0);
@@ -193,7 +193,7 @@ export default function ReservationForm({
             error.message?.toLowerCase().includes("align") ||
             error.message?.toLowerCase().includes("future")
           ) {
-            setSelectedSlot(getNextStartSlot(getRestaurantNow()));
+            setSelectedSlot(getFirstValidSlot(getRestaurantNow()));
           }
 
           setFieldErrors(nextErrors);
@@ -343,7 +343,7 @@ export default function ReservationForm({
                     const now = getRestaurantNow();
                     const noon = item.date.hour(12).minute(0).second(0).millisecond(0);
                     const fromTime = noon.isAfter(now) ? noon : now;
-                    const next = getNextStartSlot(fromTime);
+                    const next = getFirstValidSlot(fromTime);
                     setSelectedSlot(next);
                   }}
                   className={clsx(
@@ -375,7 +375,7 @@ export default function ReservationForm({
                 const now = getRestaurantNow();
                 const noon = day.hour(12).minute(0).second(0).millisecond(0);
                 const fromTime = noon.isAfter(now) ? noon : now;
-                const next = getNextStartSlot(fromTime);
+                const next = getFirstValidSlot(fromTime);
                 setSelectedSlot(next);
               }}
             />
