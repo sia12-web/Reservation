@@ -14,6 +14,7 @@ export interface ReservationAdmin {
     source: string;
     tableIds: string[];
     internalNotes?: string;
+    customerNotes?: string | null;
     createdAt: string;
 }
 

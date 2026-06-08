@@ -159,6 +159,20 @@ export default function ReservationDetails() {
                             </div>
                         )}
 
+                        {res.customerNotes && (
+                            <div className="flex items-start gap-4 pt-4 border-t border-slate-100">
+                                <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 shrink-0">
+                                    <Info className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Customer Special Requests</p>
+                                    <p className="font-medium text-slate-700 leading-relaxed bg-blue-50/50 p-3 rounded-xl border border-blue-100 text-sm italic">
+                                        "{res.customerNotes}"
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
                         {res.internalNotes && (
                             <div className="flex items-start gap-4 pt-4 border-t border-slate-100">
                                 <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 shrink-0">
