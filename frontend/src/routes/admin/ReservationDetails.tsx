@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchAdminReservation, reassignTables, fetchFloorState, checkInReservation, undoCheckInReservation } from "../../api/admin.api";
+import { fetchAdminReservation, reassignTables, fetchFloorState } from "../../api/admin.api";
 import { ChevronLeft, Table as TableIcon, Users, Clock, Phone, Mail, Hash, AlertCircle, Loader2, CalendarDays, X, User, Info } from "lucide-react";
 import dayjs from "dayjs";
-import { toRestaurantTime, getRestaurantNow } from "../../utils/time";
+import { toRestaurantTime } from "../../utils/time";
 
 import { clsx } from "clsx";
 import { getGeometricCapacity } from "../../utils/tableUtils";
@@ -43,37 +43,7 @@ export default function ReservationDetails() {
         },
     });
 
-    const checkInMutation = useMutation({
-        mutationFn: () => checkInReservation(id!),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["admin_reservation", id] });
-            queryClient.invalidateQueries({ queryKey: ["admin_floor_availability"] });
-        },
-        onError: (err: any) => {
-            setError(err.message || "Failed to check in guest");
-        },
-    });
 
-    const handleCheckIn = () => {
-        setError(null);
-        checkInMutation.mutate();
-    };
-
-    const undoCheckInMutation = useMutation({
-        mutationFn: () => undoCheckInReservation(id!),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["admin_reservation", id] });
-            queryClient.invalidateQueries({ queryKey: ["admin_floor_availability"] });
-        },
-        onError: (err: any) => {
-            setError(err.message || "Failed to undo check-in");
-        },
-    });
-
-    const handleUndoCheckIn = () => {
-        setError(null);
-        undoCheckInMutation.mutate();
-    };
 
     if (isResLoading || !res) return <div className="flex items-center justify-center min-h-[400px]">
         <Loader2 className="w-12 h-12 text-blue-600 animate-spin" />
@@ -268,26 +238,7 @@ export default function ReservationDetails() {
                                         </div>
                                     ))}
                                 </div>
-                                 {res.status === 'CONFIRMED' && getRestaurantNow().isAfter(toRestaurantTime(res.startTime).subtract(15, 'minute')) && (
-                                     <button
-                                         onClick={() => handleCheckIn()}
-                                         disabled={checkInMutation.isPending}
-                                         className="mt-6 w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-200/50 flex items-center justify-center gap-2"
-                                     >
-                                         <Users className="w-5 h-5 text-white" />
-                                         {checkInMutation.isPending ? "Checking In..." : "Check In Guest"}
-                                     </button>
-                                 )}
-                                 {res.status === 'CHECKED_IN' && (
-                                     <button
-                                         onClick={() => handleUndoCheckIn()}
-                                         disabled={undoCheckInMutation.isPending}
-                                         className="mt-6 w-full bg-amber-600 hover:bg-amber-700 text-white py-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-amber-200/50 flex items-center justify-center gap-2"
-                                     >
-                                         <Users className="w-5 h-5 text-white" />
-                                         {undoCheckInMutation.isPending ? "Undoing..." : "Undo Check In"}
-                                     </button>
-                                 )}
+
                                  {!['CANCELLED', 'COMPLETED', 'NO_SHOW'].includes(res.status) && (
                                      <button
                                          onClick={() => {

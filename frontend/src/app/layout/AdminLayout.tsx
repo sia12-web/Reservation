@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, CalendarDays, LogOut, Menu, X, ShieldAlert, Megaphone } from "lucide-react";
-import PromptSystem from "../../components/admin/PromptSystem";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const location = useLocation();
@@ -105,7 +104,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     {children}
                 </div>
             </main>
-            <PromptSystem />
         </div>
     );
 }
