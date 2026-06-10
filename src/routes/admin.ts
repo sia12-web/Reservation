@@ -10,7 +10,7 @@ import { redlock } from "../config/redis";
 import rateLimit from "express-rate-limit";
 import { maskPII } from "../utils/masking";
 import { createReservation } from "../services/reservation";
-import { sendLateWarning, sendCancellationEmail, sendReservationConfirmation, sendDepositRequestEmail } from "../services/email";
+import { sendCancellationEmail, sendReservationConfirmation, sendDepositRequestEmail } from "../services/email";
 import { logger } from "../config/logger";
 import { refundReservationDeposit } from "../services/stripe";
 import { stripe } from "../config/stripe";
@@ -534,45 +534,7 @@ router.post(
   })
 );
 
-router.post(
-  "/reservations/:id/late-warning",
-  asyncHandler(async (req: Request, res: Response) => {
-    const reservationId = req.params.id as string;
-    const reservation = await prisma.reservation.findUnique({
-      where: { id: reservationId },
-      include: { reservationTables: true }
-    });
 
-    if (!reservation) throw new HttpError(404, "Not found");
-    if ((reservation.status as string) === "WAITLIST") throw new HttpError(409, "Cannot send late warning to a waitlisted guest");
-    if (reservation.lateWarningSent) throw new HttpError(409, "Warning already sent");
-
-    await prisma.$transaction(async (tx) => {
-      await tx.reservation.update({ where: { id: reservationId }, data: { lateWarningSent: true } });
-      await tx.auditLog.create({
-        data: { 
-          reservationId, 
-          action: "LATE_WARNING_SENT", 
-          reason: "Admin prompt", 
-          before: maskPII(reservation) as Prisma.JsonObject 
-        },
-      });
-    });
-
-    if (reservation.clientEmail) {
-        await sendLateWarning({
-          to: reservation.clientEmail,
-          clientName: reservation.clientName,
-          partySize: reservation.partySize,
-          startTime: reservation.startTime,
-          shortId: reservation.shortId,
-          tableIds: reservation.reservationTables.map((rt) => rt.tableId)
-        });
-    }
-
-    res.json({ message: "Email sent" });
-  })
-);
 
 // --- Floor & Table Management ---
 

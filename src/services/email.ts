@@ -97,47 +97,6 @@ export async function sendReservationConfirmation(params: ReservationEmailParams
 
 
 
-export async function sendLateWarning(params: ReservationEmailParams) {
-    const { to, clientName, shortId, startTime } = params;
-
-    const dateStr = new Date(startTime).toLocaleString("en-CA", {
-        timeStyle: "short",
-        timeZone: "America/Montreal",
-    });
-
-    const frontendBaseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-    const manageLink = `${frontendBaseUrl}/reservations/manage/${shortId}`;
-
-    const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #fee2e2; border-radius: 12px; background-color: #fffafa;">
-        <h1 style="color: #991b1b; margin-bottom: 24px; text-align: center;">Running Late?</h1>
-        <p style="color: #475569; font-size: 16px;">Hi <strong>${clientName}</strong>,</p>
-        <p style="color: #475569; font-size: 16px;">We noticed you haven't arrived for your <strong>${dateStr}</strong> reservation yet (15 minutes ago).</p>
-        <p style="color: #475569; font-size: 16px;">Please arrive soon or call us, otherwise we may need to release your table.</p>
-        
-        <div style="text-align: center; margin-top: 32px;">
-            <p style="color: #475569; font-size: 14px; margin-bottom: 16px;">For changing the date of your reservation, please call us at <strong>(514) 485-9999</strong>.</p>
-            <a href="tel:+15144859999" style="background-color: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Call Restaurant Now</a>
-            <div style="margin-top: 12px;">
-                <a href="${manageLink}" style="color: #64748b; text-decoration: underline;">Manage Booking</a>
-            </div>
-        </div>
-    </div>
-    `;
-
-    try {
-        await transporter.sendMail({
-            from: env.mailFrom,
-            ...emailRecipients(to),
-            subject: `Urgent: Reservation Status - ${shortId}`,
-            html,
-        });
-        logger.info({ msg: "Late warning email sent", shortId, to });
-    } catch (error) {
-        logger.error({ msg: "Failed to send late warning email", error, shortId });
-    }
-}
-
 export async function sendThankYouEmail(params: { to: string; clientName: string; shortId: string }) {
     const { to, clientName, shortId } = params;
 
